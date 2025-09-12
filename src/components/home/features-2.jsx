@@ -1,4 +1,5 @@
 import CustomButton from "./custom-btn";
+import FloatingIconsDemo from "./float-icons";
 
 export default function Features2() {
   return (
@@ -18,9 +19,8 @@ export default function Features2() {
           </div>
           <CustomButton>Explore Integrations</CustomButton>
         </div>
-
       </div>
-
+      <FloatingIconsDemo />
     </div>
   );
 }
