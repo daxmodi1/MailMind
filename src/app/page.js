@@ -1,28 +1,54 @@
 import Hero from "@/components/home/hero";
 import Nav from "@/components/home/nav";
 import About from "@/components/home/about";
-import Image from "next/image";
+import Features from "@/components/home/features";
+import Features2 from "@/components/home/features-2"
+
 export default function Home() {
   return (
-    <div className="bg-[#eef2ff]">
-      {/* First Section with bg.png */}
+    <div>
       <section
-        className="flex flex-col items-center w-full h-screen bg-cover bg-center gap-y-15"
-        style={{ backgroundImage: "url('/bg.png')" }}
+        className="md:min-h-screen bg-cover repeat-0"
+        style={{ backgroundImage: "url('/bg/bg.png')" }}
       >
-        <Nav />
-        <Hero />
+        <Nav/>
+        <Hero/>
+      </section>
+      <div 
+        className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
+      />
+      <section
+        className="md:min-h-screen bg-center bg-cover repeat-0"
+        style={{ backgroundImage: "url('/bg/bg2.png')" }}
+      >
         <About/>
       </section>
-      
-      <section
-        className="flex flex-col items-center w-full h-screen bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg2.png')" }}
+      <div 
+        className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
-        className="flex flex-col items-center w-full h-screen bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-3.png')" }}
+        className="min-h-screen bg-cover bg-center repeat-0"
+        style={{ backgroundImage: "url('/bg/bg3.png')" }}
+      >
+        <Features/>
+      </section>
+      <div 
+        className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
+      <section
+        className="h-screen bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg/bg4.png')" }}
+      >
+        <Features2/>
+      </section>
+      <div 
+        className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
+      />
+      <section
+        className="h-screen bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg/bg4.png')" }}
+      >
+      </section>
     </div>
   );
 }

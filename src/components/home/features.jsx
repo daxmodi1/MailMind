@@ -1,0 +1,93 @@
+'use client';
+import { RainbowButton } from "../magicui/rainbow-button";
+import { PointerHighlight } from "../ui/pointer-highlight";
+import Image from "next/image";
+
+export default function Features() {
+  return (
+    <div className="pt-20 md:pt-50 lg:pt-60 flex flex-col items-center w-full relative z-20 min-h-screen pb-20 px-4 md:px-8 lg:px-16">
+      <RainbowButton className="rounded-full px-6 py-2">
+        Features
+      </RainbowButton>
+
+      <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold md:font-semibold text-center mt-4 text-primary leading-tight">
+        Powerful{' '}
+        <PointerHighlight
+          rectangleClassName="bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 leading-loose"
+          pointerClassName="text-blue-500"
+          containerClassName="inline-block mx-1"
+        >
+          <span className="relative z-10 font-bold italic md:not-italic">features</span>
+        </PointerHighlight>{' '}
+        to Elevate
+      </h1>
+
+      <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold md:font-semibold text-center mt-1 mb-5 text-primary leading-tight">
+        Your Email Experience
+      </h1>
+
+      <p className="text-muted-foreground font-semibold text-center text-lg mb-10 w-99 md:w-150 lg:w-170">
+        Manage your emails faster, more securely, and efficiently with intelligent features designed for maximum productivity.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto w-full">
+        
+        {[
+          {
+            src: '/mail.svg',
+            title: 'Smart Inbox Management',
+            desc: 'Prioritize important emails with an intelligent filtering system that keeps your inbox clean and distraction-free.',
+            alt: 'Smart Inbox Management',
+          },
+          {
+            src: '/calander.svg',
+            title: 'Effortless Email Organization',
+            desc: [
+              'Easily manage and archive emails with an intuitive folder',
+              'and tagging system.',
+            ],
+            alt: 'Email Organization',
+          },
+          {
+            src: '/file.svg',
+            title: 'Seamless Attachment Handling',
+            desc: [
+              'Send, receive, and organize attachments effortlessly,',
+              'ensuring all your important files are always within reach.',
+            ],
+            alt: 'Attachment Handling',
+          },
+          {
+            src: '/security.svg',
+            title: 'Top-Tier Security & Privacy',
+            desc: [
+              'Protect your emails with advanced encryption and robust',
+              'privacy safeguards.',
+            ],
+            alt: 'Security & Privacy',
+          },
+        ].map((feature, idx) => (
+          <div
+            key={idx}
+            className="flex flex-col items-center bg-gradient-to-b from-white/70 via-white/30 to-white/10 border border-white/50 rounded-2xl p-6 transition-transform duration-300 ease-in-out hover:scale-105"
+          >
+            <Image
+              src={feature.src}
+              alt={feature.alt}
+              width={200}
+              height={200}
+              className="mb-4 transition-all duration-300 ease-in-out hover:scale-110"
+            />
+            <h2 className="text-xl font-semibold text-center text-neutral-700 mb-2">
+              {feature.title}
+            </h2>
+              <p className="text-md text-center text-muted-foreground">
+                {feature.desc}
+              </p>
+          </div>
+        ))}
+
+      </div>
+    </div>
+  );
+}
