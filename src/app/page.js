@@ -3,6 +3,7 @@ import Nav from "@/components/home/nav";
 import About from "@/components/home/about";
 import Features from "@/components/home/features";
 import Features2 from "@/components/home/features-2"
+import Pricing from "@/components/home/pricing";
 
 export default function Home() {
   return (
@@ -48,6 +49,7 @@ export default function Home() {
         className="h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/bg/bg4.png')" }}
       >
+        <Pricing/>
       </section>
     </div>
   );

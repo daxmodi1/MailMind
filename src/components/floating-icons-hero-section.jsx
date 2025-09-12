@@ -84,7 +84,7 @@ const FloatingIcons = React.forwardRef(({ className, icons, ...props }, ref) => 
     <div
       ref={ref}
       onMouseMove={handleMouseMove}
-      className={cn('relative w-full h-screen overflow-hidden', className)}
+      className={cn('relative w-[80%] h-screen overflow-hidden', className)}
       {...props}
     >
       {icons.map((iconData, index) => (
