@@ -29,7 +29,7 @@ const RFDewi = localFont({
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${Linotype.variable} ${RFDewi.className}`}>
-      <body>
+      <body className="*:m-0 *:p-0">
         {children}
       </body>
     </html>
