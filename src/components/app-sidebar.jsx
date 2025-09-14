@@ -1,187 +1,140 @@
 "use client"
 
-import * as React from "react"
-import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react"
-
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar
 } from "@/components/ui/sidebar"
-
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+import Link from "next/link"
+import { Inbox, AlertCircle, FileText, Mail, Archive, Trash2, Settings, Headphones } from 'lucide-react'
+import Image from "next/image"
+import { NavUser } from "./nav-user"
+import { NavSecondary } from "./nav-secondary"
+import { NavMain } from "./nav-collapse"
+import { SearchForm } from "./search-form"
+import { cn } from "@/lib/utils"
+const items = [
+  {
+    title: "Sent",
+    url: "/dashboard/sent",
+    icon: Mail,
   },
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
+  {
+    title: "Drafts",
+    url: "/dashboard/drafts",
+    icon: FileText,
+  },
+  {
+    title: "spam",
+    url: "/dashboard/spam",
+    icon: AlertCircle,
+  },
+  {
+    title: "Archive",
+    url: "/dashboard/archive",
+    icon: Archive,
+  },
+  {
+    title: "Trash",
+    url: "/dashboard/trash",
+    icon: Trash2,
+  },
+]
+
+const item_2 = [
+  {
+    title: "Settings",
+    url: "dashboard/settings",
+    icon: Settings,
+  },
+  {
+    title: "Help Center",
+    url: "dashboard/help",
+    icon: Headphones,
+  },
+]
+const user = {
+  avatar: "none",
+  name: "dax"
 }
 
-export function AppSidebar({
-  ...props
-}) {
+const inbox = [
+  {
+    title: "Inbox",
+    url: "/dashboard/url",
+    icon: Inbox,
+    isActive: true,
+    items: [
+      {
+        title: "All Messages",
+        url: "/dashboard/inbox/all",
+      },
+      {
+        title: "Unread",
+        url: "/dashboard/inbox/unread",
+      },
+      {
+        title: "Done",
+        url: "/dashboard/inbox/done",
+      },
+    ],
+  },
+]
+export function AppSidebar() {
+  const { state } = useSidebar();
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <div
-                  className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Acme Inc</span>
-                  <span className="truncate text-xs">Enterprise</span>
-                </div>
-              </a>
+            <SidebarMenuButton asChild>
+              <Link href="/" className={cn(state == "expanded" ? "py-6":"py-0")}>
+                <Image src="/logo.png" alt="logo" width={36} height={36} />
+                <span className="font-main font-semibold text-xl">Mailorant</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {state == "expanded" && <SearchForm/>}
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Emails</SidebarGroupLabel>
+          <NavMain items={inbox}/>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map(({ url, title, icon: Icon }) => {
+                return (
+                  <SidebarMenuItem key={title} className={title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={url}>
+                        <Icon />
+                        <span>{title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <NavSecondary items={item_2} className="mt-auto" />
       </SidebarContent>
+       {state == "expanded" && <SidebarSeparator/>}
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

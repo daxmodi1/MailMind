@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
+import { cn } from "@/lib/utils";
 export function NavSecondary({
   items,
   ...props
@@ -15,10 +15,10 @@ export function NavSecondary({
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className={cn("flex flex-col")}>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm">
+              <SidebarMenuButton asChild>
                 <a href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
