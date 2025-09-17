@@ -1,6 +1,8 @@
+'use client'
+
 import "./globals.css";
 import localFont from 'next/font/local';
-
+import { SessionProvider } from "next-auth/react";
 const Linotype = localFont({
   src: './fonts/Linotype-Didot-Italic.otf',
   display: 'swap',
@@ -30,7 +32,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${Linotype.variable} ${RFDewi.className}`}>
       <body className="*:m-0 *:p-0">
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

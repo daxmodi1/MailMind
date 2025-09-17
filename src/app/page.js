@@ -70,7 +70,6 @@ export default function Home() {
       >
         <Footer />
       </section>
-
     </div>
   );
 }

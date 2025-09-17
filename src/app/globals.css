@@ -166,4 +166,113 @@
   }
 }
 
+/* Add this to your global CSS file (globals.css or similar) */
 
+.email-content {
+  max-width: 100%;
+  overflow-x: auto;
+  word-wrap: break-word;
+  line-height: 1.4;
+  font-size: 0.875rem;
+}
+
+.email-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 4px 0;
+  border-radius: 4px;
+  max-height: 300px;
+}
+
+.email-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.email-content table td,
+.email-content table th {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.email-content table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.email-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.email-content a:hover {
+  color: #1d4ed8;
+}
+
+.email-content p {
+  margin: 4px 0;
+  font-size: 0.875rem;
+}
+
+.email-content h1,
+.email-content h2,
+.email-content h3,
+.email-content h4,
+.email-content h5,
+.email-content h6 {
+  margin: 8px 0 4px 0;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.email-content ul,
+.email-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.email-content blockquote {
+  margin: 8px 0;
+  padding-left: 16px;
+  border-left: 4px solid #e5e7eb;
+  font-style: italic;
+}
+
+.email-content pre {
+  background-color: #f3f4f6;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  margin: 8px 0;
+}
+
+.email-content code {
+  background-color: #f3f4f6;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+}
+
+/* Handle email-specific styles that might interfere */
+.email-content * {
+  max-width: 100% !important;
+}
+
+.email-content table {
+  table-layout: auto !important;
+  width: 100% !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .email-content {
+    font-size: 14px;
+  }
+  
+  .email-content table {
+    font-size: 12px;
+  }
+}
