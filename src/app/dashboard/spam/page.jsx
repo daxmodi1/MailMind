@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
+import { Ripple } from '@/components/ui/ripple';
 export default function SpamPage() {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +42,8 @@ export default function SpamPage() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-lg">Loading spam emails...</div>
+    <div className="flex justify-center items-center">
+      <Ripple />
     </div>
   );
 

@@ -5,7 +5,7 @@ import { createGmailClient } from "@/lib/gmailUtils";
 import { parseEmailContent } from "@/app/api/gmail/route";
 
 export async function GET(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   
   console.log('Fetching email with ID:', id);
   
