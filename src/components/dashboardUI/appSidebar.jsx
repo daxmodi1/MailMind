@@ -58,6 +58,11 @@ const AllEmailItems = [
     icon: AlertCircle,
   },
   {
+    title: "Archive",
+    url: "/dashboard/archive",
+    icon: Archive
+  },
+  {
     title: "Trash",
     url: "/dashboard/trash",
     icon: Trash2,

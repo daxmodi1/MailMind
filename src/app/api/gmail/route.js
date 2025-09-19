@@ -46,6 +46,13 @@ export async function GET(req) {
       case "archive":
         emails = await fetchFullEmails(gmail, ["-INBOX", "-SPAM", "-TRASH"]);
         break;
+      case "all":
+        // Fetch all emails regardless of labels (excluding spam and trash by default)
+        emails = await fetchFullEmails(gmail, []);
+        break;
+      case "done":
+        emails = await fetchFullEmails(gmail, ["-UNREAD"]);
+        break;
       default:
         emails = await fetchFullEmails(gmail, ["INBOX"]);
     }
@@ -72,12 +79,17 @@ export async function GET(req) {
 // Fetching the gmails from the gmail client
 async function fetchFullEmails(gmail, labelIds, maxResults = 10) {
   try {
-    // Get list of emails
-    const emailList = await gmail.users.messages.list({
+    const queryParams = {
       userId: 'me',
-      labelIds,
       maxResults,
-    });
+    };
+
+
+    if (labelIds && labelIds.length > 0) {
+      queryParams.labelIds = labelIds;
+    }
+
+    const emailList = await gmail.users.messages.list(queryParams);
 
     if (!emailList.data.messages) {
       return [];
