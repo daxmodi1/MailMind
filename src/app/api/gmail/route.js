@@ -26,35 +26,35 @@ export async function GET(req) {
     let emails = [];
     switch (type) {
       case "inbox":
-        emails = await fetchFullEmails(gmail, ["INBOX"]);
+        emails = await fetchFullEmails(gmail, "in:inbox");
         break;
       case "sent":
-        emails = await fetchFullEmails(gmail, ["SENT"]);
+        emails = await fetchFullEmails(gmail, "in:sent");
         break;
       case "unread":
-        emails = await fetchFullEmails(gmail, ["UNREAD"]);
+        emails = await fetchFullEmails(gmail, "in:unread");
+        break;
         break;
       case "drafts":
-        emails = await fetchFullEmails(gmail, ["DRAFT"]);
+        emails = await fetchFullEmails(gmail, "in:draft");
         break;
       case "spam":
-        emails = await fetchFullEmails(gmail, ["SPAM"]);
+        emails = await fetchFullEmails(gmail, "in:spam");
         break;
       case "trash":
-        emails = await fetchFullEmails(gmail, ["TRASH"]);
+        emails = await fetchFullEmails(gmail, "in:trash");
         break;
       case "archive":
-        emails = await fetchFullEmails(gmail, ["-INBOX", "-SPAM", "-TRASH"]);
+        emails = await fetchFullEmails(gmail, "in:archive");
         break;
       case "all":
-        // Fetch all emails regardless of labels (excluding spam and trash by default)
-        emails = await fetchFullEmails(gmail, []);
+        emails = await fetchFullEmails(gmail,  "in:all");
         break;
       case "done":
-        emails = await fetchFullEmails(gmail, ["-UNREAD"]);
+        emails = await fetchFullEmails(gmail, "in:read");
         break;
       default:
-        emails = await fetchFullEmails(gmail, ["INBOX"]);
+        emails = await fetchFullEmails(gmail, "in:inbox");
     }
 
     return NextResponse.json(emails);
@@ -77,18 +77,19 @@ export async function GET(req) {
 }
 
 // Fetching the gmails from the gmail client
-async function fetchFullEmails(gmail, labelIds, maxResults = 10) {
+async function fetchFullEmails(gmail, query = null, maxResults = 10) {
   try {
+    // Prepare the query parameters
     const queryParams = {
       userId: 'me',
       maxResults,
     };
-
-
-    if (labelIds && labelIds.length > 0) {
-      queryParams.labelIds = labelIds;
+    // Add search query if provided (for read/unread filtering)
+    if (query) {
+      queryParams.q = query;
     }
 
+    // Get list of emails
     const emailList = await gmail.users.messages.list(queryParams);
 
     if (!emailList.data.messages) {
@@ -118,6 +119,55 @@ async function fetchFullEmails(gmail, labelIds, maxResults = 10) {
     return emails;
   } catch (error) {
     console.error('Error fetching emails:', error);
+    throw error;
+  }
+}
+
+// Fetch read emails by filtering out unread ones
+async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
+  try {
+    // Get list of emails from specified labels
+    const emailList = await gmail.users.messages.list({
+      userId: 'me',
+      labelIds,
+      maxResults: maxResults * 2, // Fetch more to account for filtering
+    });
+
+    if (!emailList.data.messages) {
+      return [];
+    }
+
+    const emails = [];
+    let readCount = 0;
+    
+    // Fetch full content for each email and filter for read emails
+    for (const message of emailList.data.messages) {
+      if (readCount >= maxResults) break;
+      
+      try {
+        const email = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id,
+          format: 'full',
+        });
+        
+        // Check if email is read (doesn't have UNREAD label)
+        const isUnread = email.data.labelIds && email.data.labelIds.includes('UNREAD');
+        
+        if (!isUnread) {
+          const emailData = parseEmailContent(email.data);
+          emails.push(emailData);
+          readCount++;
+        }
+      } catch (emailError) {
+        console.error(`Error fetching email ${message.id}:`, emailError);
+        continue;
+      }
+    }
+    
+    return emails;
+  } catch (error) {
+    console.error('Error fetching read emails:', error);
     throw error;
   }
 }
