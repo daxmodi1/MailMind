@@ -1,7 +1,9 @@
-export default function Drafts() {
+'use client'
+
+import FetchAndShowEmail from '@/components/emailUI/fetchAndShowEmail';
+
+export default function DraftsPage() {
   return (
-    <div className="p-4">
-      drafts
-    </div>
+    <FetchAndShowEmail type="draft" />
   )
 }

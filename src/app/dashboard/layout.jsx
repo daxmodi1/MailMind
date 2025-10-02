@@ -1,22 +1,22 @@
-
 import { AppSidebar } from "@/components/dashboardUI/appSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import SiteHeader from "@/components/dashboardUI/siteHeader";
-import { SessionProvider } from "next-auth/react";
 
 export default function DashboardLayout({ children }) {
   return (
-    <div>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <SiteHeader />
-            <Separator />
+    <div className="h-screen overflow-hidden">
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="flex flex-col h-screen">
+          <SiteHeader />
+          <Separator />
+          <div className="flex-1 overflow-y-auto">
             {children}
-          </SidebarInset>
-        </SidebarProvider>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   );
 }

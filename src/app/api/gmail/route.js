@@ -34,8 +34,7 @@ export async function GET(req) {
       case "unread":
         emails = await fetchFullEmails(gmail, "in:unread");
         break;
-        break;
-      case "drafts":
+      case "draft":
         emails = await fetchFullEmails(gmail, "in:draft");
         break;
       case "spam":
@@ -51,7 +50,7 @@ export async function GET(req) {
         emails = await fetchFullEmails(gmail,  "in:all");
         break;
       case "done":
-        emails = await fetchFullEmails(gmail, "in:read");
+        emails = await fetchFullEmails(gmail, "label:read");
         break;
       default:
         emails = await fetchFullEmails(gmail, "in:inbox");
@@ -172,7 +171,52 @@ async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
   }
 }
 
-// Parsing email Content
+// HTML Sanitization function - ADDED THIS
+function sanitizeHtmlContent(html) {
+  if (!html || typeof html !== 'string') return '';
+  
+  // Remove all HTML tags and their content that could affect styling
+  let cleaned = html
+    // Remove script tags and their content
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    // Remove style tags and their content
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    // Remove all HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Decode HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&[#\w]+;/g, ' ')
+    // Clean up extra whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return cleaned;
+}
+
+// Extract clean text for preview - ADDED THIS
+function extractCleanText(email) {
+  // Priority order: snippet -> textBody -> cleaned htmlBody
+  if (email.snippet && email.snippet.trim()) {
+    return email.snippet.trim();
+  }
+  
+  if (email.textBody && email.textBody.trim()) {
+    return email.textBody.trim();
+  }
+  
+  if (email.htmlBody) {
+    return sanitizeHtmlContent(email.htmlBody);
+  }
+  
+  return '';
+}
+
+// Parsing email Content - MODIFIED THIS
 export function parseEmailContent(email) {
   const headers = email.payload.headers || [];
   const subject = headers.find(h => h.name === 'Subject')?.value || 'No Subject';
@@ -184,6 +228,14 @@ export function parseEmailContent(email) {
   // Parse the email body and attachments
   const content = parseEmailParts(email.payload);
   
+  // ADDED: Create clean preview text
+  const emailForCleaning = {
+    snippet: email.snippet || '',
+    textBody: content.text,
+    htmlBody: content.html
+  };
+  const cleanPreviewText = extractCleanText(emailForCleaning);
+  
   return {
     id: email.id,
     threadId: email.threadId,
@@ -193,9 +245,11 @@ export function parseEmailContent(email) {
     date,
     messageId,
     snippet: email.snippet || '',
-    labelIds: email.labelIds || [],
+    // MODIFIED: Keep original for full email view
     htmlBody: content.html,
     textBody: content.text,
+    // ADDED: Clean text for safe preview display
+    previewText: cleanPreviewText,
     attachments: content.attachments,
     inlineImages: content.inlineImages,
     hasAttachments: content.attachments.length > 0,
