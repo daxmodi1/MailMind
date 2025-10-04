@@ -76,7 +76,7 @@ export async function GET(req) {
 }
 
 // Fetching the gmails from the gmail client
-async function fetchFullEmails(gmail, query = null, maxResults = 10) {
+async function fetchFullEmails(gmail, query = null, maxResults = 20) {
   try {
     // Prepare the query parameters
     const queryParams = {
@@ -254,6 +254,8 @@ export function parseEmailContent(email) {
     inlineImages: content.inlineImages,
     hasAttachments: content.attachments.length > 0,
     hasInlineImages: content.inlineImages.length > 0,
+    labelIds: email.labelIds || [],
+    
   };
 }
 

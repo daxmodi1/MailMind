@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-// auth-options for the OAuthFLow (from next Auth)
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -12,9 +11,11 @@ export const authOptions = {
           scope:
             "openid email profile https://mail.google.com/",
           access_type: "offline",
-          // ensures that refresh_token is returened usefull for long term
           prompt: "consent",
         },
+      },
+      httpOptions: {
+        timeout: 10000, // 10 seconds instead of default 3.5
       },
     }),
   ],
@@ -22,7 +23,6 @@ export const authOptions = {
     signIn: "/signin",
   },
   callbacks: {
-    // called when token is created or updated
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;
@@ -31,13 +31,11 @@ export const authOptions = {
       }
       return token;
     },
-    //add the data into the current session
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;
       session.expiresAt = token.expiresAt;
 
-      // Add user info explicitly
       session.user = {
         name: session.user.name,
         email: session.user.email,
@@ -58,9 +56,8 @@ export const authOptions = {
       return baseUrl;
     },
   },
-  // key for sign cookies 
   secret: process.env.NEXTAUTH_SECRET,
 };
-// Next Auth Handler
+
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
