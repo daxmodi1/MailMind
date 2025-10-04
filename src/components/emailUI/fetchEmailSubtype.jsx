@@ -7,7 +7,7 @@ import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 
-export default function FetchAndShowEmail({ type, subtype }) {
+export default function FetchEmailSubType({ type, subtype }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +30,14 @@ export default function FetchAndShowEmail({ type, subtype }) {
     }
     fetchArchiveEmails();
   }, []);
+
+  // Decode HTML entities
+  const decodeHtmlEntities = (text) => {
+    if (!text) return text;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    return doc.documentElement.textContent;
+  };
 
   const formatDate = (dateString) => {
     try {
@@ -93,6 +101,64 @@ export default function FetchAndShowEmail({ type, subtype }) {
       console.error('Failed to mark email as read:', err);
     }
   };
+
+  const deleteEmail = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const res = await fetch('/api/gmail/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!res.ok) throw new Error('Failed to delete email');
+
+      // Remove email from UI
+      setEmails(prev => prev.filter(email => email.id !== id));
+      
+      // Remove from selected emails if it was selected
+      setSelectedEmails(prev => {
+        const newSelected = new Set(prev);
+        newSelected.delete(id);
+        return newSelected;
+      });
+    } catch (err) {
+      console.error('Failed to delete email:', err);
+      alert('Failed to delete email. Please try again.');
+    }
+  };
+
+  const deleteSelectedEmails = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${selectedEmails.size} email(s)?`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      const deletePromises = Array.from(selectedEmails).map(id =>
+        fetch('/api/gmail/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      // Remove deleted emails from UI
+      setEmails(prev => prev.filter(email => !selectedEmails.has(email.id)));
+      setSelectedEmails(new Set());
+    } catch (err) {
+      console.error('Failed to delete emails:', err);
+      alert('Failed to delete some emails. Please try again.');
+    }
+  };
+  
   if (loading) return (
     <div className="flex justify-center items-center min-h-screen">
       <Ripple />
@@ -112,6 +178,7 @@ export default function FetchAndShowEmail({ type, subtype }) {
         totalCount={emails.length}
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
+        onDelete={deleteSelectedEmails}
       />
 
       <div className="flex-1 overflow-auto">
@@ -131,12 +198,12 @@ export default function FetchAndShowEmail({ type, subtype }) {
                 <div
                   key={email.id}
                   className={cn(
-                    'relative group transition-colors',
+                    'relative group transition-all duration-200',
                     isSelected
                       ? 'bg-blue-50'
                       : isUnread
-                      ? 'bg-white hover:shadow-md'
-                      : 'bg-[#F2F6FC] hover:shadow-md'
+                      ? 'bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
+                      : 'bg-[#F2F6FC] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
                   )}
                   onMouseEnter={() => setHoveredEmail(email.id)}
                   onMouseLeave={() => setHoveredEmail(null)}
@@ -145,7 +212,7 @@ export default function FetchAndShowEmail({ type, subtype }) {
                     href={`/dashboard/${type}/${subtype}/${email.id}`}
                     className="flex items-center px-4 py-2 gap-4"
                     onClick={async () => {
-                      await markAsRead(email.id); // 👈 mark as read before navigating
+                      await markAsRead(email.id);
                     }}
                   >
                     {/* Checkbox */}
@@ -166,22 +233,23 @@ export default function FetchAndShowEmail({ type, subtype }) {
                           isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
                         )}
                       >
-                        {extractSenderName(email.from)}
+                        {decodeHtmlEntities(extractSenderName(email.from))}
                       </span>
                     </div>
 
                     {/* Subject + Preview */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm overflow-hidden line-clamp-1">
+                      <div className="text-sm line-clamp-1"
+                      >
                         <span
                           className={cn(
                             isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
                           )}
                         >
-                          {email.subject || '(no subject)'}
+                          {decodeHtmlEntities(email.subject) || '(no subject)'}
                         </span>
-                        <span className="text-gray-600 ml-2 overflow-hidden">
-                          - {email.previewText || email.snippet || ''}
+                        <span className="text-gray-600 ml-2">
+                          - {decodeHtmlEntities(email.previewText || email.snippet || '')}
                         </span>
                       </div>
                     </div>
@@ -193,10 +261,14 @@ export default function FetchAndShowEmail({ type, subtype }) {
                           <button className="p-1 hover:bg-gray-200 rounded" title="Archive">
                             <Archive className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1   hover:bg-gray-200 rounded" title="Delete">
+                          <button 
+                            className="p-1 hover:bg-gray-200 rounded" 
+                            title="Delete"
+                            onClick={(e) => deleteEmail(email.id, e)}
+                          >
                             <Trash2 className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1   hover:bg-gray-200 rounded" title="Mark as read">
+                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read">
                             <MailOpen className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>

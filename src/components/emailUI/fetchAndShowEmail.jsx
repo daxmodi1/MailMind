@@ -1,26 +1,25 @@
 'use client'
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Ripple } from '@/components/ui/ripple';
 import EmailNav from './emailNav';
 import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-export default function FetchAndShowEmail({ type }) {
+export default function FetchAndShowEmail({ type, subtype }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEmails, setSelectedEmails] = useState(new Set());
   const [hoveredEmail, setHoveredEmail] = useState(null);
-  const router = useRouter();
 
   useEffect(() => {
-    async function fetchEmails() {
+    async function fetchArchiveEmails() {
       try {
-        const res = await fetch(`/api/gmail?type=${type}`, { cache: 'no-store' });
+        const res = await fetch(`/api/gmail?type=${subtype}`);
         const data = await res.json();
+
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
         setEmails(data);
       } catch (err) {
@@ -29,8 +28,16 @@ export default function FetchAndShowEmail({ type }) {
         setLoading(false);
       }
     }
-    fetchEmails();
-  }, [type]);
+    fetchArchiveEmails();
+  }, []);
+
+  // Decode HTML entities
+  const decodeHtmlEntities = (text) => {
+    if (!text) return text;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    return doc.documentElement.textContent;
+  };
 
   const formatDate = (dateString) => {
     try {
@@ -95,23 +102,90 @@ export default function FetchAndShowEmail({ type }) {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><Ripple /></div>;
-  if (error) return <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">Error: {error}</div>;
+  const deleteEmail = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const res = await fetch('/api/gmail/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!res.ok) throw new Error('Failed to delete email');
+
+      // Remove email from UI
+      setEmails(prev => prev.filter(email => email.id !== id));
+      
+      // Remove from selected emails if it was selected
+      setSelectedEmails(prev => {
+        const newSelected = new Set(prev);
+        newSelected.delete(id);
+        return newSelected;
+      });
+    } catch (err) {
+      console.error('Failed to delete email:', err);
+      alert('Failed to delete email. Please try again.');
+    }
+  };
+
+  const deleteSelectedEmails = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${selectedEmails.size} email(s)?`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      const deletePromises = Array.from(selectedEmails).map(id =>
+        fetch('/api/gmail/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      // Remove deleted emails from UI
+      setEmails(prev => prev.filter(email => !selectedEmails.has(email.id)));
+      setSelectedEmails(new Set());
+    } catch (err) {
+      console.error('Failed to delete emails:', err);
+      alert('Failed to delete some emails. Please try again.');
+    }
+  };
+  
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <Ripple />
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-red-500 text-lg">Error: {error}</div>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className='flex flex-col h-full bg-white'>
       <EmailNav
         selectedCount={selectedEmails.size}
         totalCount={emails.length}
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
+        onDelete={deleteSelectedEmails}
       />
 
       <div className="flex-1 overflow-auto">
         {emails.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
-            <div className="text-lg mb-2">No {type} emails found</div>
-            <div className="text-sm">Your {type} folder is empty</div>
+            <div className="text-lg mb-2">No {subtype} emails found</div>
+            <div className="text-sm">Your {subtype} folder is empty</div>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -121,27 +195,29 @@ export default function FetchAndShowEmail({ type }) {
               const isUnread = email.labelIds?.includes('UNREAD');
 
               return (
-                <Link
+                <div
                   key={email.id}
-                  href={`/dashboard/${type}/${email.id}`}
                   className={cn(
-                    'relative group transition-colors cursor-pointer',
+                    'relative group transition-all duration-200',
                     isSelected
                       ? 'bg-blue-50'
                       : isUnread
-                        ? 'bg-white hover:shadow-md'
-                        : 'bg-[#F2F6FC] hover:shadow-md'
+                      ? 'bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
+                      : 'bg-[#F2F6FC] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
                   )}
                   onMouseEnter={() => setHoveredEmail(email.id)}
                   onMouseLeave={() => setHoveredEmail(null)}
-                  onClick={async () => {
-                    await markAsRead(email.id); // 👈 mark as read before navigating
-                  }}
                 >
-                  <div className="flex items-center px-4 py-2 gap-4">
+                  <Link
+                    href={`/dashboard/${type}/${subtype}/${email.id}`}
+                    className="flex items-center px-4 py-2 gap-4"
+                    onClick={async () => {
+                      await markAsRead(email.id);
+                    }}
+                  >
                     {/* Checkbox */}
                     <div onClick={(e) => toggleEmailSelection(email.id, e)}>
-                      <Checkbox checked={isSelected} onChange={() => { }} />
+                      <Checkbox checked={isSelected} onChange={() => {}} />
                     </div>
 
                     {/* Star */}
@@ -151,19 +227,29 @@ export default function FetchAndShowEmail({ type }) {
 
                     {/* Sender */}
                     <div className="w-48 flex-shrink-0">
-                      <span className={cn('text-sm truncate block', isUnread ? 'font-bold text-black' : 'font-normal text-gray-700')}>
-                        {extractSenderName(email.from)}
+                      <span
+                        className={cn(
+                          'text-sm truncate block',
+                          isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
+                        )}
+                      >
+                        {decodeHtmlEntities(extractSenderName(email.from))}
                       </span>
                     </div>
 
                     {/* Subject + Preview */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm overflow-hidden line-clamp-1">
-                        <span className={cn(isUnread ? 'font-bold text-black' : 'font-normal text-gray-700')}>
-                          {email.subject || '(no subject)'}
+                      <div className="text-sm line-clamp-1"
+                      >
+                        <span
+                          className={cn(
+                            isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
+                          )}
+                        >
+                          {decodeHtmlEntities(email.subject) || '(no subject)'}
                         </span>
-                        <span className="text-gray-600 ml-2 overflow-hidden">
-                          - {email.previewText || email.snippet || ''}
+                        <span className="text-gray-600 ml-2">
+                          - {decodeHtmlEntities(email.previewText || email.snippet || '')}
                         </span>
                       </div>
                     </div>
@@ -171,14 +257,18 @@ export default function FetchAndShowEmail({ type }) {
                     {/* Date & Hover Icons */}
                     <div className="flex items-center gap-3 flex-shrink-0">
                       {isHovered && !isSelected && (
-                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1" onClick={(e) => e.preventDefault()}>
                           <button className="p-1 hover:bg-gray-200 rounded" title="Archive">
                             <Archive className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1 hover:bg-gray-200 rounded" title="Delete">
+                          <button 
+                            className="p-1 hover:bg-gray-200 rounded" 
+                            title="Delete"
+                            onClick={(e) => deleteEmail(email.id, e)}
+                          >
                             <Trash2 className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read" onClick={async (e) => { e.stopPropagation(); await markAsRead(email.id); }}>
+                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read">
                             <MailOpen className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
@@ -198,8 +288,8 @@ export default function FetchAndShowEmail({ type }) {
                         {formatDate(email.date)}
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               );
             })}
           </div>

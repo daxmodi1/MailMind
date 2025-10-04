@@ -13,11 +13,11 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll }) {
+export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const allSelected = selectedCount === totalCount && totalCount > 0;
   const someSelected = selectedCount > 0 && selectedCount < totalCount;
-
+  
   const handleCheckboxClick = () => {
     if (allSelected || someSelected) {
       onDeselectAll();
@@ -115,6 +115,7 @@ export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDes
               <Archive className="w-4 h-4 text-gray-600" />
             </button>
             <button
+              onClick={onDelete}
               className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Delete"
             >
