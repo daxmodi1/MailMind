@@ -73,6 +73,26 @@ export default function FetchAndShowEmail({ type, subtype }) {
     setSelectedEmails(new Set());
   };
 
+  const markAsRead = async (id) => {
+    try {
+      await fetch('/api/gmail/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      // Update UI without removing email
+      setEmails(prev =>
+        prev.map(email =>
+          email.id === id
+            ? { ...email, labelIds: (email.labelIds || []).filter(l => l !== 'UNREAD') }
+            : email
+        )
+      );
+    } catch (err) {
+      console.error('Failed to mark email as read:', err);
+    }
+  };
   if (loading) return (
     <div className="flex justify-center items-center min-h-screen">
       <Ripple />
@@ -124,6 +144,9 @@ export default function FetchAndShowEmail({ type, subtype }) {
                   <Link
                     href={`/dashboard/${type}/${subtype}/${email.id}`}
                     className="flex items-center px-4 py-2 gap-4"
+                    onClick={async () => {
+                      await markAsRead(email.id); // 👈 mark as read before navigating
+                    }}
                   >
                     {/* Checkbox */}
                     <div onClick={(e) => toggleEmailSelection(email.id, e)}>

@@ -1,5 +1,4 @@
 'use client'
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Ripple } from '@/components/ui/ripple';
 import EmailNav from './emailNav';
@@ -7,6 +6,7 @@ import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function FetchAndShowEmail({ type }) {
   const [emails, setEmails] = useState([]);
@@ -19,9 +19,8 @@ export default function FetchAndShowEmail({ type }) {
   useEffect(() => {
     async function fetchEmails() {
       try {
-        const res = await fetch(`/api/gmail?type=${type}`);
+        const res = await fetch(`/api/gmail?type=${type}`, { cache: 'no-store' });
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
         setEmails(data);
       } catch (err) {
@@ -75,48 +74,29 @@ export default function FetchAndShowEmail({ type }) {
     setSelectedEmails(new Set());
   };
 
-  // 🔹 Mark email as read and update UI instantly
-  const markAsRead = async (emailId) => {
+  const markAsRead = async (id) => {
     try {
-      await fetch('/api/gmail/markRead', {
+      await fetch('/api/gmail/mark-read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: emailId }),
+        body: JSON.stringify({ id }),
       });
 
-      // 🔹 Update UI instantly
-      setEmails((prevEmails) =>
-        prevEmails.map((email) =>
-          email.id === emailId
-            ? { ...email, labelIds: email.labelIds.filter((id) => id !== 'UNREAD') }
+      // Update UI without removing email
+      setEmails(prev =>
+        prev.map(email =>
+          email.id === id
+            ? { ...email, labelIds: (email.labelIds || []).filter(l => l !== 'UNREAD') }
             : email
         )
       );
     } catch (err) {
-      console.error('Error marking email as read:', err);
+      console.error('Failed to mark email as read:', err);
     }
   };
 
-  const handleEmailClick = async (email) => {
-    if (email.labelIds?.includes('UNREAD')) {
-      await markAsRead(email.id);
-    }
-    router.push(`/dashboard/${type}/${email.id}`);
-  };
-
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Ripple />
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500 text-lg">Error: {error}</div>
-      </div>
-    );
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Ripple /></div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">Error: {error}</div>;
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -141,24 +121,27 @@ export default function FetchAndShowEmail({ type }) {
               const isUnread = email.labelIds?.includes('UNREAD');
 
               return (
-                <div
+                <Link
                   key={email.id}
+                  href={`/dashboard/${type}/${email.id}`}
                   className={cn(
                     'relative group transition-colors cursor-pointer',
                     isSelected
                       ? 'bg-blue-50'
                       : isUnread
-                      ? 'bg-white hover:shadow-md'
-                      : 'bg-[#F2F6FC] hover:shadow-md'
+                        ? 'bg-white hover:shadow-md'
+                        : 'bg-[#F2F6FC] hover:shadow-md'
                   )}
                   onMouseEnter={() => setHoveredEmail(email.id)}
                   onMouseLeave={() => setHoveredEmail(null)}
-                  onClick={() => handleEmailClick(email)}
+                  onClick={async () => {
+                    await markAsRead(email.id); // 👈 mark as read before navigating
+                  }}
                 >
                   <div className="flex items-center px-4 py-2 gap-4">
                     {/* Checkbox */}
                     <div onClick={(e) => toggleEmailSelection(email.id, e)}>
-                      <Checkbox checked={isSelected} onChange={() => {}} />
+                      <Checkbox checked={isSelected} onChange={() => { }} />
                     </div>
 
                     {/* Star */}
@@ -168,12 +151,7 @@ export default function FetchAndShowEmail({ type }) {
 
                     {/* Sender */}
                     <div className="w-48 flex-shrink-0">
-                      <span
-                        className={cn(
-                          'text-sm truncate block',
-                          isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
-                        )}
-                      >
+                      <span className={cn('text-sm truncate block', isUnread ? 'font-bold text-black' : 'font-normal text-gray-700')}>
                         {extractSenderName(email.from)}
                       </span>
                     </div>
@@ -181,11 +159,7 @@ export default function FetchAndShowEmail({ type }) {
                     {/* Subject + Preview */}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm overflow-hidden line-clamp-1">
-                        <span
-                          className={cn(
-                            isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
-                          )}
-                        >
+                        <span className={cn(isUnread ? 'font-bold text-black' : 'font-normal text-gray-700')}>
                           {email.subject || '(no subject)'}
                         </span>
                         <span className="text-gray-600 ml-2 overflow-hidden">
@@ -204,7 +178,7 @@ export default function FetchAndShowEmail({ type }) {
                           <button className="p-1 hover:bg-gray-200 rounded" title="Delete">
                             <Trash2 className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read">
+                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read" onClick={async (e) => { e.stopPropagation(); await markAsRead(email.id); }}>
                             <MailOpen className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
@@ -225,7 +199,7 @@ export default function FetchAndShowEmail({ type }) {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
