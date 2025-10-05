@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Ripple } from '@/components/ui/ripple';
@@ -6,22 +6,37 @@ import EmailNav from './emailNav';
 import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
+import { decodeHtmlEntities, formatDate, extractSenderName } from '@/lib/helprEmails';
+import { useEmailActions } from '@/lib/useEmailActions';
 
 export default function UnifiedEmailComponent({ type, subtype }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedEmails, setSelectedEmails] = useState(new Set());
   const [hoveredEmail, setHoveredEmail] = useState(null);
 
+  // ✅ Custom hook for all email actions
+  const {
+    selectedEmails,
+    toggleEmailSelection,
+    handleSelectAll,
+    handleDeselectAll,
+    markAsRead,
+    deleteEmail,
+    deleteSelectedEmails,
+    archiveEmail,
+    archiveSelectedEmails,
+    markSelectedAsRead,
+    markSelectedAsUnread,
+  } = useEmailActions();
+
+  // 🔄 Fetch emails
   useEffect(() => {
     async function fetchEmails() {
       try {
-        // Use subtype if provided, otherwise use type
         const queryType = subtype || type;
         const res = await fetch(`/api/gmail?type=${queryType}`);
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
         setEmails(data);
       } catch (err) {
@@ -33,187 +48,40 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     fetchEmails();
   }, [type, subtype]);
 
-  // Decode HTML entities
-  const decodeHtmlEntities = (text) => {
-    if (!text) return text;
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    return doc.documentElement.textContent;
-  };
+  // 🧭 Generate the correct email link
+  const getEmailLink = (emailId) =>
+    subtype ? `/dashboard/${type}/${subtype}/${emailId}` : `/dashboard/${type}/${emailId}`;
 
-  const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diff = now - date;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      if (days === 0)
-        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      else if (days < 7)
-        return date.toLocaleDateString('en-US', { weekday: 'short' });
-      else if (date.getFullYear() === now.getFullYear())
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      else
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const extractSenderName = (from) => {
-    const match = from?.match(/^([^<]+)</);
-    return match ? match[1].trim() : from?.replace(/.*<(.*)>.*/, '$1') || from;
-  };
-
-  const toggleEmailSelection = (emailId, e) => {
-    e.preventDefault();
-    const newSelected = new Set(selectedEmails);
-    if (newSelected.has(emailId)) newSelected.delete(emailId);
-    else newSelected.add(emailId);
-    setSelectedEmails(newSelected);
-  };
-
-  const handleSelectAll = () => {
-    const allEmailIds = new Set(emails.map(email => email.id));
-    setSelectedEmails(allEmailIds);
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedEmails(new Set());
-  };
-
-  const markAsRead = async (id) => {
-    return performEmailOperation('markRead', id);
-  };
-
-  const deleteEmail = async (id, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    return performEmailOperation('delete', id, true);
-  };
-
-  const deleteSelectedEmails = async () => {
-    if (selectedEmails.size === 0) return;
-    
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${selectedEmails.size} email(s)?`
-    );
-    
-    if (!confirmDelete) return;
-    
-    return performEmailOperation('delete', Array.from(selectedEmails), true);
-  };
-
-  const archiveEmail = async (id, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    return performEmailOperation('archive', id, true);
-  };
-
-  const archiveSelectedEmails = async () => {
-    if (selectedEmails.size === 0) return;
-    return performEmailOperation('archive', Array.from(selectedEmails), true);
-  };
-
-  const markSelectedAsRead = async () => {
-    if (selectedEmails.size === 0) return;
-    return performEmailOperation('markRead', Array.from(selectedEmails), false);
-  };
-
-  const markSelectedAsUnread = async () => {
-    if (selectedEmails.size === 0) return;
-    return performEmailOperation('markUnread', Array.from(selectedEmails), false);
-  };
-
-  // Unified operation handler
-  const performEmailOperation = async (operation, ids, removeFromUI = false) => {
-    try {
-      const res = await fetch('/api/gmail/operations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation, ids }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || `Failed to ${operation}`);
-
-      // Update UI based on operation
-      const idsArray = Array.isArray(ids) ? ids : [ids];
-      
-      if (removeFromUI) {
-        setEmails(prev => prev.filter(email => !idsArray.includes(email.id)));
-        setSelectedEmails(prev => {
-          const newSelected = new Set(prev);
-          idsArray.forEach(id => newSelected.delete(id));
-          return newSelected;
-        });
-      } else if (operation === 'markRead') {
-        setEmails(prev =>
-          prev.map(email =>
-            idsArray.includes(email.id)
-              ? { ...email, labelIds: (email.labelIds || []).filter(l => l !== 'UNREAD') }
-              : email
-          )
-        );
-      } else if (operation === 'markUnread') {
-        setEmails(prev =>
-          prev.map(email => {
-            if (idsArray.includes(email.id)) {
-              const currentLabels = email.labelIds || [];
-              // Only add UNREAD if it's not already there
-              if (!currentLabels.includes('UNREAD')) {
-                return { ...email, labelIds: [...currentLabels, 'UNREAD'] };
-              }
-            }
-            return email;
-          })
-        );
-      }
-
-      return data;
-    } catch (err) {
-      console.error(`Failed to ${operation}:`, err);
-      alert(`Failed to ${operation}. Please try again.`);
-      throw err;
-    }
-  };
-
-  // Generate the correct link path based on whether subtype exists
-  const getEmailLink = (emailId) => {
-    if (subtype) {
-      return `/dashboard/${type}/${subtype}/${emailId}`;
-    }
-    return `/dashboard/${type}/${emailId}`;
-  };
-
-  // Get display name for empty state
   const displayName = subtype || type;
-  
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <Ripple />
-    </div>
-  );
 
-  if (error) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-red-500 text-lg">Error: {error}</div>
-    </div>
-  );
+  // 🌀 Loading State
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Ripple />
+      </div>
+    );
 
+  // ❌ Error State
+  if (error)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 text-lg">Error: {error}</div>
+      </div>
+    );
+
+  // 📩 Main UI
   return (
-    <div className='flex flex-col h-full bg-white'>
+    <div className="flex flex-col h-full bg-white">
       <EmailNav
         selectedCount={selectedEmails.size}
         totalCount={emails.length}
-        onSelectAll={handleSelectAll}
+        onSelectAll={() => handleSelectAll(emails)}
         onDeselectAll={handleDeselectAll}
-        onDelete={deleteSelectedEmails}
-        onArchive={archiveSelectedEmails}
-        onMarkRead={markSelectedAsRead}
-        onMarkUnread={markSelectedAsUnread}
+        onDelete={() => deleteSelectedEmails(setEmails)}
+        onArchive={() => archiveSelectedEmails(setEmails)}
+        onMarkRead={() => markSelectedAsRead(setEmails)}
+        onMarkUnread={() => markSelectedAsUnread(setEmails)}
         selectedEmails={selectedEmails}
         emails={emails}
       />
@@ -237,7 +105,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                   className={cn(
                     'relative group transition-all duration-200',
                     isSelected
-                      ? 'bg-blue-50'
+                      ? 'bg-[#C2DBFF]'
                       : isUnread
                       ? 'bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
                       : 'bg-[#F2F6FC] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
@@ -248,12 +116,15 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                   <Link
                     href={getEmailLink(email.id)}
                     className="flex items-center px-4 py-2 gap-4"
-                    onClick={async () => {
-                      await markAsRead(email.id);
+                    onClick={(e) => {
+                      const target = e.target;
+                      const isCheckbox = target.closest('[data-checkbox]');
+                      const isActionButton = target.closest('button');
+                      if (!isCheckbox && !isActionButton) markAsRead(email.id, setEmails);
                     }}
                   >
                     {/* Checkbox */}
-                    <div onClick={(e) => toggleEmailSelection(email.id, e)}>
+                    <div onClick={(e) => toggleEmailSelection(email.id, e)} data-checkbox>
                       <Checkbox checked={isSelected} onChange={() => {}} />
                     </div>
 
@@ -294,17 +165,17 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                     <div className="flex items-center gap-3 flex-shrink-0">
                       {isHovered && !isSelected && (
                         <div className="flex gap-1" onClick={(e) => e.preventDefault()}>
-                          <button 
-                            className="p-1 hover:bg-gray-200 rounded" 
+                          <button
+                            className="p-1 hover:bg-gray-200 rounded"
                             title="Archive"
-                            onClick={(e) => archiveEmail(email.id, e)}
+                            onClick={(e) => archiveEmail(email.id, e, setEmails)}
                           >
                             <Archive className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button 
-                            className="p-1 hover:bg-gray-200 rounded" 
+                          <button
+                            className="p-1 hover:bg-gray-200 rounded"
                             title="Delete"
-                            onClick={(e) => deleteEmail(email.id, e)}
+                            onClick={(e) => deleteEmail(email.id, e, setEmails)}
                           >
                             <Trash2 className="w-4 h-4 text-gray-600" />
                           </button>
