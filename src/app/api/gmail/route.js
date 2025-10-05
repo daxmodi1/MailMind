@@ -47,10 +47,10 @@ export async function GET(req) {
         emails = await fetchFullEmails(gmail, "in:archive");
         break;
       case "all":
-        emails = await fetchFullEmails(gmail,  "in:all");
+        emails = await fetchFullEmails(gmail,  "-in:spam -in:trash");
         break;
       case "done":
-        emails = await fetchFullEmails(gmail, "label:read");
+        emails = await fetchFullEmails(gmail, "in:read");
         break;
       default:
         emails = await fetchFullEmails(gmail, "in:inbox");

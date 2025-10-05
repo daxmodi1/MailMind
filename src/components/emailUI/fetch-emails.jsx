@@ -7,7 +7,7 @@ import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 
-export default function FetchEmailSubType({ type, subtype }) {
+export default function UnifiedEmailComponent({ type, subtype }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,9 +15,11 @@ export default function FetchEmailSubType({ type, subtype }) {
   const [hoveredEmail, setHoveredEmail] = useState(null);
 
   useEffect(() => {
-    async function fetchArchiveEmails() {
+    async function fetchEmails() {
       try {
-        const res = await fetch(`/api/gmail?type=${subtype}`);
+        // Use subtype if provided, otherwise use type
+        const queryType = subtype || type;
+        const res = await fetch(`/api/gmail?type=${queryType}`);
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
@@ -28,8 +30,8 @@ export default function FetchEmailSubType({ type, subtype }) {
         setLoading(false);
       }
     }
-    fetchArchiveEmails();
-  }, []);
+    fetchEmails();
+  }, [type, subtype]);
 
   // Decode HTML entities
   const decodeHtmlEntities = (text) => {
@@ -82,52 +84,13 @@ export default function FetchEmailSubType({ type, subtype }) {
   };
 
   const markAsRead = async (id) => {
-    try {
-      await fetch('/api/gmail/mark-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-
-      // Update UI without removing email
-      setEmails(prev =>
-        prev.map(email =>
-          email.id === id
-            ? { ...email, labelIds: (email.labelIds || []).filter(l => l !== 'UNREAD') }
-            : email
-        )
-      );
-    } catch (err) {
-      console.error('Failed to mark email as read:', err);
-    }
+    return performEmailOperation('markRead', id);
   };
 
   const deleteEmail = async (id, e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    try {
-      const res = await fetch('/api/gmail/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-
-      if (!res.ok) throw new Error('Failed to delete email');
-
-      // Remove email from UI
-      setEmails(prev => prev.filter(email => email.id !== id));
-      
-      // Remove from selected emails if it was selected
-      setSelectedEmails(prev => {
-        const newSelected = new Set(prev);
-        newSelected.delete(id);
-        return newSelected;
-      });
-    } catch (err) {
-      console.error('Failed to delete email:', err);
-      alert('Failed to delete email. Please try again.');
-    }
+    return performEmailOperation('delete', id, true);
   };
 
   const deleteSelectedEmails = async () => {
@@ -138,26 +101,95 @@ export default function FetchEmailSubType({ type, subtype }) {
     );
     
     if (!confirmDelete) return;
+    
+    return performEmailOperation('delete', Array.from(selectedEmails), true);
+  };
 
+  const archiveEmail = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return performEmailOperation('archive', id, true);
+  };
+
+  const archiveSelectedEmails = async () => {
+    if (selectedEmails.size === 0) return;
+    return performEmailOperation('archive', Array.from(selectedEmails), true);
+  };
+
+  const markSelectedAsRead = async () => {
+    if (selectedEmails.size === 0) return;
+    return performEmailOperation('markRead', Array.from(selectedEmails), false);
+  };
+
+  const markSelectedAsUnread = async () => {
+    if (selectedEmails.size === 0) return;
+    return performEmailOperation('markUnread', Array.from(selectedEmails), false);
+  };
+
+  // Unified operation handler
+  const performEmailOperation = async (operation, ids, removeFromUI = false) => {
     try {
-      const deletePromises = Array.from(selectedEmails).map(id =>
-        fetch('/api/gmail/delete', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id }),
-        })
-      );
+      const res = await fetch('/api/gmail/operations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation, ids }),
+      });
 
-      await Promise.all(deletePromises);
+      const data = await res.json();
 
-      // Remove deleted emails from UI
-      setEmails(prev => prev.filter(email => !selectedEmails.has(email.id)));
-      setSelectedEmails(new Set());
+      if (!res.ok) throw new Error(data.error || `Failed to ${operation}`);
+
+      // Update UI based on operation
+      const idsArray = Array.isArray(ids) ? ids : [ids];
+      
+      if (removeFromUI) {
+        setEmails(prev => prev.filter(email => !idsArray.includes(email.id)));
+        setSelectedEmails(prev => {
+          const newSelected = new Set(prev);
+          idsArray.forEach(id => newSelected.delete(id));
+          return newSelected;
+        });
+      } else if (operation === 'markRead') {
+        setEmails(prev =>
+          prev.map(email =>
+            idsArray.includes(email.id)
+              ? { ...email, labelIds: (email.labelIds || []).filter(l => l !== 'UNREAD') }
+              : email
+          )
+        );
+      } else if (operation === 'markUnread') {
+        setEmails(prev =>
+          prev.map(email => {
+            if (idsArray.includes(email.id)) {
+              const currentLabels = email.labelIds || [];
+              // Only add UNREAD if it's not already there
+              if (!currentLabels.includes('UNREAD')) {
+                return { ...email, labelIds: [...currentLabels, 'UNREAD'] };
+              }
+            }
+            return email;
+          })
+        );
+      }
+
+      return data;
     } catch (err) {
-      console.error('Failed to delete emails:', err);
-      alert('Failed to delete some emails. Please try again.');
+      console.error(`Failed to ${operation}:`, err);
+      alert(`Failed to ${operation}. Please try again.`);
+      throw err;
     }
   };
+
+  // Generate the correct link path based on whether subtype exists
+  const getEmailLink = (emailId) => {
+    if (subtype) {
+      return `/dashboard/${type}/${subtype}/${emailId}`;
+    }
+    return `/dashboard/${type}/${emailId}`;
+  };
+
+  // Get display name for empty state
+  const displayName = subtype || type;
   
   if (loading) return (
     <div className="flex justify-center items-center min-h-screen">
@@ -179,13 +211,18 @@ export default function FetchEmailSubType({ type, subtype }) {
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         onDelete={deleteSelectedEmails}
+        onArchive={archiveSelectedEmails}
+        onMarkRead={markSelectedAsRead}
+        onMarkUnread={markSelectedAsUnread}
+        selectedEmails={selectedEmails}
+        emails={emails}
       />
 
       <div className="flex-1 overflow-auto">
         {emails.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
-            <div className="text-lg mb-2">No {subtype} emails found</div>
-            <div className="text-sm">Your {subtype} folder is empty</div>
+            <div className="text-lg mb-2">No {displayName} emails found</div>
+            <div className="text-sm">Your {displayName} folder is empty</div>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -209,7 +246,7 @@ export default function FetchEmailSubType({ type, subtype }) {
                   onMouseLeave={() => setHoveredEmail(null)}
                 >
                   <Link
-                    href={`/dashboard/${type}/${subtype}/${email.id}`}
+                    href={getEmailLink(email.id)}
                     className="flex items-center px-4 py-2 gap-4"
                     onClick={async () => {
                       await markAsRead(email.id);
@@ -239,8 +276,7 @@ export default function FetchEmailSubType({ type, subtype }) {
 
                     {/* Subject + Preview */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm line-clamp-1"
-                      >
+                      <div className="text-sm line-clamp-1">
                         <span
                           className={cn(
                             isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
@@ -258,7 +294,11 @@ export default function FetchEmailSubType({ type, subtype }) {
                     <div className="flex items-center gap-3 flex-shrink-0">
                       {isHovered && !isSelected && (
                         <div className="flex gap-1" onClick={(e) => e.preventDefault()}>
-                          <button className="p-1 hover:bg-gray-200 rounded" title="Archive">
+                          <button 
+                            className="p-1 hover:bg-gray-200 rounded" 
+                            title="Archive"
+                            onClick={(e) => archiveEmail(email.id, e)}
+                          >
                             <Archive className="w-4 h-4 text-gray-600" />
                           </button>
                           <button 

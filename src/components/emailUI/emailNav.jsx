@@ -13,10 +13,20 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete }) {
+export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete, onArchive, onMarkRead, onMarkUnread, selectedEmails, emails }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const allSelected = selectedCount === totalCount && totalCount > 0;
   const someSelected = selectedCount > 0 && selectedCount < totalCount;
+  
+  // Check if all selected emails are read (don't have UNREAD label)
+  const areAllSelectedRead = () => {
+    if (selectedCount === 0) return false;
+    
+    const selectedEmailObjects = emails.filter(email => selectedEmails.has(email.id));
+    return selectedEmailObjects.every(email => !email.labelIds?.includes('UNREAD'));
+  };
+
+  const isMarkAsUnread = areAllSelectedRead();
   
   const handleCheckboxClick = () => {
     if (allSelected || someSelected) {
@@ -109,6 +119,7 @@ export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDes
         {selectedCount > 0 && (
           <div className="flex items-center gap-1">
             <button
+              onClick={onArchive}
               className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Archive"
             >
@@ -123,7 +134,8 @@ export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDes
             </button>
             <button
               className="p-2 hover:bg-gray-100 rounded transition-colors"
-              title="Mark as read"
+              title={isMarkAsUnread ? "Mark as unread" : "Mark as read"}
+              onClick={isMarkAsUnread ? onMarkUnread : onMarkRead}
             >
               <MailOpen className="w-4 h-4 text-gray-600" />
             </button>

@@ -1,9 +1,8 @@
 'use client'
-
-import FetchAndShowEmail from '@/components/emailUI/fetchAndShowEmail';
+import FetchEmails from '@/components/emailUI/fetch-emails';
 
 export default function DraftsPage() {
   return (
-    <FetchAndShowEmail type="draft" />
+    <FetchEmails type="draft" />
   )
 }

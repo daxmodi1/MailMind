@@ -1,7 +1,7 @@
 'use client';
-import FetchEmailSubtype from '@/components/emailUI/fetchEmailSubtype';
+import FetchEmails from '@/components/emailUI/fetch-emails';
 export default function UnreadPage() {
   return (
-    <FetchEmailSubtype type="inbox" subtype="unread" />
+    <FetchEmails type="inbox" subtype="unread" />
   );
 }

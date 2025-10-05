@@ -1,11 +1,7 @@
 'use client';
-
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Ripple } from '@/components/ui/ripple';
-import FetchEmailSubtype from '@/components/emailUI/fetchEmailSubtype';
+import FetchEmails from '@/components/emailUI/fetch-emails';
 export default function DonePage() {
   return (
-    <FetchEmailSubtype type="inbox" subtype="done" />
+    <FetchEmails type="inbox" subtype="done" />
   );
 }

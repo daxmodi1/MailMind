@@ -1,8 +1,8 @@
 'use client';
 
-import FetchAndShowEmail from "@/components/emailUI/fetchAndShowEmail";
+import FetchEmails from "@/components/emailUI/fetch-emails";
 export default function TrashPage() {
   return (
-    <FetchAndShowEmail type="trash" />
+    <FetchEmails type="trash" />
   );
 }

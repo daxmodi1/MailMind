@@ -1,8 +1,8 @@
 'use client'
-import FetchEmailSubtype from '@/components/emailUI/fetchEmailSubtype';
+import FetchEmails from '@/components/emailUI/fetch-emails';
 export default function AllPage() {
   return (
-    <FetchEmailSubtype type="inbox" subtype="all" />
+    <FetchEmails type="inbox" subtype="all" />
   );
 }
  

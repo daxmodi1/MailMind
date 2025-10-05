@@ -1,12 +1,8 @@
 'use client'
-
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Ripple } from '@/components/ui/ripple';
-import FetchAndShowEmail from '@/components/emailUI/fetchAndShowEmail';
+import FetchEmails from '@/components/emailUI/fetch-emails';
 
 export default function ArchivePage() {
   return (
-    <FetchAndShowEmail type="archive" />
+    <FetchEmails type="archive" />
   );
 }
