@@ -28,7 +28,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     archiveSelectedEmails,
     markSelectedAsRead,
     markSelectedAsUnread,
-  } = useEmailActions();
+  } = useEmailActions(type, subtype);
 
   // 🔄 Fetch emails
   useEffect(() => {

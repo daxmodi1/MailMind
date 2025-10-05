@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-export function useEmailActions() {
+export function useEmailActions(type, subtype) {
   const [selectedEmails, setSelectedEmails] = useState(new Set());
 
   // Toggle select/deselect individual email
@@ -89,8 +89,11 @@ export function useEmailActions() {
   };
 
   // --- Email Operations ---
-  const markAsRead = async (id, setEmails) =>
-    performEmailOperation('markRead', id, false, setEmails);
+  const markAsRead = async (id, setEmails) => {
+    // If we're in the unread view, remove from UI after marking as read
+    const removeFromUI = type === 'unread' || subtype === 'unread';
+    return performEmailOperation('markRead', id, removeFromUI, setEmails);
+  };
 
   const deleteEmail = async (id, e, setEmails) => {
     if (e) {
@@ -124,12 +127,15 @@ export function useEmailActions() {
 
   const markSelectedAsRead = async (setEmails) => {
     if (selectedEmails.size === 0) return;
-    return performEmailOperation('markRead', Array.from(selectedEmails), false, setEmails);
+    // If we're in the unread view, remove from UI after marking as read
+    const removeFromUI = type === 'unread' || subtype === 'unread';
+    return performEmailOperation('markRead', Array.from(selectedEmails), removeFromUI, setEmails);
   };
 
   const markSelectedAsUnread = async (setEmails) => {
     if (selectedEmails.size === 0) return;
-    return performEmailOperation('markUnread', Array.from(selectedEmails), false, setEmails);
+
+    return performEmailOperation('markUnread', Array.from(selectedEmails), subtype === 'done' ? true : false, setEmails);
   };
 
   return {
