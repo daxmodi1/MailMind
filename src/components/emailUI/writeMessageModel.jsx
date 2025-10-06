@@ -1,17 +1,35 @@
-import { useState } from "react"
+'use client'
+import { useState, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import TextAlign from '@tiptap/extension-text-align'
-import TextStyle from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
-import FontFamily from '@tiptap/extension-font-family'
-import Highlight from '@tiptap/extension-highlight'
-import Link from '@tiptap/extension-link'
-import Placeholder from '@tiptap/extension-placeholder'
-
+import { LexicalComposer } from '@lexical/react/LexicalComposer'
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
+import { ContentEditable } from '@lexical/react/LexicalContentEditable'
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
+import { ListPlugin } from '@lexical/react/LexicalListPlugin'
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
+import {
+  $getRoot,
+  $getSelection,
+  FORMAT_TEXT_COMMAND,
+  FORMAT_ELEMENT_COMMAND,
+  UNDO_COMMAND,
+  REDO_COMMAND,
+  CAN_UNDO_COMMAND,
+  CAN_REDO_COMMAND,
+  COMMAND_PRIORITY_LOW,
+  INDENT_CONTENT_COMMAND,
+  OUTDENT_CONTENT_COMMAND
+} from 'lexical'
+import { $generateHtmlFromNodes } from '@lexical/html'
+import { HeadingNode, QuoteNode } from '@lexical/rich-text'
+import { ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list'
+import { LinkNode } from '@lexical/link'
 import { Sparkles } from "./sparkels"
+
+// ...rest of your code stays the same...
+
 import {
   Maximize2, Minus, X, Link2, Smile, Trash2, EllipsisVertical,
   Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
@@ -48,20 +66,346 @@ const FONT_FAMILIES = [
 ]
 
 const FONT_SIZES = [
-  { value: 'small', label: 'Small', class: 'text-sm' },
-  { value: 'normal', label: 'Normal', class: 'text-base' },
-  { value: 'large', label: 'Large', class: 'text-lg' },
-  { value: 'huge', label: 'Huge', class: 'text-2xl' },
+  { value: '12px', label: 'Small' },
+  { value: '14px', label: 'Normal' },
+  { value: '18px', label: 'Large' },
+  { value: '24px', label: 'Huge' },
 ]
 
-const TEXT_COLORS = [
-  '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
-  '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
-]
+const editorTheme = {
+  paragraph: 'mb-1',
+  text: {
+    bold: 'font-bold',
+    italic: 'italic',
+    underline: 'underline',
+    strikethrough: 'line-through',
+  },
+  list: {
+    ul: 'list-disc ml-5',
+    ol: 'list-decimal ml-5',
+    listitem: 'ml-2',
+  },
+}
 
-const HIGHLIGHT_COLORS = [
-  'transparent', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#0000ff', '#ff0000', '#ffa500',
-]
+function ToolbarPlugin({
+  fontFamily,
+  fontSize,
+  setFont,
+  setTextSize,
+  canUndo,
+  canRedo,
+  onCanUndoChange,
+  onCanRedoChange
+}) {
+  const [editor] = useLexicalComposerContext()
+
+  // Track undo/redo state
+  useMemo(() => {
+    return editor.registerCommand(
+      CAN_UNDO_COMMAND,
+      (payload) => {
+        onCanUndoChange(payload)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+  }, [editor, onCanUndoChange])
+
+  useMemo(() => {
+    return editor.registerCommand(
+      CAN_REDO_COMMAND,
+      (payload) => {
+        onCanRedoChange(payload)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+  }, [editor, onCanRedoChange])
+
+  const formatBold = useCallback(() => {
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')
+  }, [editor])
+
+  const formatItalic = useCallback(() => {
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')
+  }, [editor])
+
+  const formatUnderline = useCallback(() => {
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')
+  }, [editor])
+
+  const formatStrikethrough = useCallback(() => {
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')
+  }, [editor])
+
+  const formatAlignLeft = useCallback(() => {
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')
+  }, [editor])
+
+  const formatAlignCenter = useCallback(() => {
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')
+  }, [editor])
+
+  const formatAlignRight = useCallback(() => {
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')
+  }, [editor])
+
+  const insertBulletList = useCallback(() => {
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
+  }, [editor])
+
+  const insertOrderedList = useCallback(() => {
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)
+  }, [editor])
+
+  const handleUndo = useCallback(() => {
+    editor.dispatchCommand(UNDO_COMMAND, undefined)
+  }, [editor])
+
+  const handleRedo = useCallback(() => {
+    editor.dispatchCommand(REDO_COMMAND, undefined)
+  }, [editor])
+
+  const handleIndentDecrease = useCallback(() => {
+    editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
+  }, [editor])
+
+  const handleIndentIncrease = useCallback(() => {
+    editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
+  }, [editor])
+  return (
+    <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 overflow-x-auto gap-1">
+      {/* Undo/Redo */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0 disabled:opacity-50"
+            onClick={handleUndo}
+            disabled={!canUndo}
+          >
+            <Undo2 className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Undo</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0 disabled:opacity-50"
+            onClick={handleRedo}
+            disabled={!canRedo}
+          >
+            <Redo2 className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Redo</TooltipContent>
+      </Tooltip>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Font Family */}
+      <Select value={fontFamily} onValueChange={setFont}>
+        <SelectTrigger className="h-8 w-[120px] border-0 bg-transparent hover:bg-gray-200">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {FONT_FAMILIES.map((font) => (
+            <SelectItem key={font.value} value={font.value}>
+              {font.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Font Size */}
+      <Select value={fontSize} onValueChange={setTextSize}>
+        <SelectTrigger className="h-8 w-[100px] border-0 bg-transparent hover:bg-gray-200">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {FONT_SIZES.map((size) => (
+            <SelectItem key={size.value} value={size.value}>
+              {size.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Text Formatting */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatBold}
+          >
+            <Bold className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Bold</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatItalic}
+          >
+            <Italic className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Italic</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatUnderline}
+          >
+            <UnderlineIcon className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Underline</TooltipContent>
+      </Tooltip>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Alignment */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatAlignLeft}
+          >
+            <AlignLeft className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Align left</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatAlignCenter}
+          >
+            <AlignCenter className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Align center</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={formatAlignRight}
+          >
+            <AlignRight className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Align right</TooltipContent>
+      </Tooltip>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Lists */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={insertBulletList}
+          >
+            <List className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Bulleted list</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={insertOrderedList}
+          >
+            <ListOrdered className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Numbered list</TooltipContent>
+      </Tooltip>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+      {/* Indent */}
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={handleIndentDecrease}
+          >
+            <IndentDecrease className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Decrease indent</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
+            onClick={handleIndentIncrease}
+          >
+            <IndentIncrease className="h-4 w-4 text-gray-600" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Increase indent</TooltipContent>
+      </Tooltip>
+      {/* More Options */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
+            <EllipsisVertical className="h-4 w-4 text-gray-600" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={formatStrikethrough}>
+            <Strikethrough className="mr-2 h-4 w-4" />
+            Strikethrough
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
 
 export default function WriteMessage({ isOpen, onToggle }) {
   const [to, setTo] = useState("")
@@ -75,64 +419,42 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const [attachments, setAttachments] = useState([])
   const [showFormatting, setShowFormatting] = useState(false)
   const [fontFamily, setFontFamily] = useState('Arial')
-  const [fontSize, setFontSize] = useState('normal')
+  const [fontSize, setFontSize] = useState('14px')
+  const [editorState, setEditorState] = useState(null)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-      }),
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      TextStyle,
-      Color,
-      FontFamily.configure({
-        types: ['textStyle'],
-      }),
-      Highlight.configure({
-        multicolor: true,
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline cursor-pointer',
-        },
-      }),
-      Placeholder.configure({
-        placeholder: 'Write your message...',
-      }),
-    ],
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] p-0',
-      },
-    },
-  })
+  const initialConfig = useMemo(() => ({
+    namespace: 'EmailEditor',
+    theme: editorTheme,
+    onError: (error) => console.error(error),
+    nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
+  }), [])
+
+  const handleSend = useCallback(() => {
+    if (editorState) {
+      editorState.read(() => {
+        const htmlContent = $generateHtmlFromNodes(editorState._nodeMap)
+        console.log({ to, subject, message: htmlContent, cc, bcc, attachments })
+      })
+    }
+  }, [editorState, to, subject, cc, bcc, attachments])
+
+  const toggleMinimized = useCallback(() => {
+    setIsMinimized(prev => !prev)
+    setIsMaximized(false)
+  }, [])
+
+  const toggleMaximized = useCallback(() => {
+    setIsMaximized(prev => !prev)
+    setIsMinimized(false)
+  }, [])
+
+  const toggleCC = useCallback(() => setShowCC(prev => !prev), [])
+  const toggleBCC = useCallback(() => setShowBCC(prev => !prev), [])
+  const toggleFormatting = useCallback(() => setShowFormatting(prev => !prev), [])
 
   if (!isOpen) return null
-
-  const handleSend = () => {
-    const htmlContent = editor?.getHTML() || ''
-    console.log({ to, subject, message: htmlContent, cc, bcc, attachments })
-  }
-
-  const setTextSize = (size) => {
-    setFontSize(size)
-    const sizeClass = FONT_SIZES.find(s => s.value === size)?.class || 'text-base'
-    
-    if (editor) {
-      editor.chain().focus().setMark('textStyle', { fontSize: sizeClass }).run()
-    }
-  }
-
-  const setFont = (font) => {
-    setFontFamily(font)
-    if (editor) {
-      editor.chain().focus().setFontFamily(font).run()
-    }
-  }
 
   return (
     <>
@@ -140,7 +462,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
       {isMaximized && (
         <div
           className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setIsMaximized(false)}
+          onClick={toggleMaximized}
         />
       )}
 
@@ -165,10 +487,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 hover:bg-gray-100"
-              onClick={() => {
-                setIsMinimized(!isMinimized)
-                setIsMaximized(false)
-              }}
+              onClick={toggleMinimized}
             >
               <Minus className="h-5 w-5 text-gray-600" />
             </Button>
@@ -176,10 +495,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 hover:bg-gray-100"
-              onClick={() => {
-                setIsMaximized(!isMaximized)
-                setIsMinimized(false)
-              }}
+              onClick={toggleMaximized}
             >
               <Maximize2 className="h-4 w-4 text-gray-600" />
             </Button>
@@ -211,7 +527,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   variant="ghost"
                   size="sm"
                   className="h-7 px-3 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3"
-                  onClick={() => setShowCC(!showCC)}
+                  onClick={toggleCC}
                 >
                   CC
                 </Button>
@@ -219,7 +535,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   variant="ghost"
                   size="sm"
                   className="h-7 px-2 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3"
-                  onClick={() => setShowBCC(!showBCC)}
+                  onClick={toggleBCC}
                 >
                   BCC
                 </Button>
@@ -268,48 +584,48 @@ export default function WriteMessage({ isOpen, onToggle }) {
 
             <Separator />
 
-            {/* Tiptap Editor */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <EditorContent 
-                editor={editor} 
-                className="min-h-full w-full text-base leading-relaxed"
-                style={{ fontFamily: fontFamily }}
-              />
-            </div>
-
-            {/* Attachments Section */}
-            {attachments.length > 0 && (
-              <div className="px-4 pb-3">
-                {attachments.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 mb-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-red-600 text-xs font-bold">PDF</span>
+            {/* Lexical Editor */}
+            <div className="flex-1 overflow-y-auto p-4 relative">
+              <LexicalComposer initialConfig={initialConfig}>
+                <div className="relative">
+                  <RichTextPlugin
+                    contentEditable={
+                      <ContentEditable
+                        className="min-h-[200px] w-full text-base leading-relaxed focus:outline-none"
+                        style={{ fontFamily, fontSize }}
+                      />
+                    }
+                    placeholder={
+                      <div className="absolute top-0 left-0 text-gray-400 pointer-events-none">
+                        Write your message...
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900">
-                          {file.name}
-                        </span>
-                        <span className="text-xs text-gray-500">{file.size}</span>
-                      </div>
+                    }
+                    ErrorBoundary={LexicalErrorBoundary}
+                  />
+                  <HistoryPlugin />
+                  <ListPlugin />
+                  <OnChangePlugin
+                    onChange={(editorState) => {
+                      setEditorState(editorState)
+                    }}
+                  />
+                  {showFormatting && (
+                    <div className="mt-4">
+                      <ToolbarPlugin
+                        fontFamily={fontFamily}
+                        fontSize={fontSize}
+                        setFont={setFontFamily}
+                        setTextSize={setFontSize}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
+                        onCanUndoChange={setCanUndo}
+                        onCanRedoChange={setCanRedo}
+                      />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 hover:bg-gray-200"
-                      onClick={() =>
-                        setAttachments(attachments.filter((_, i) => i !== index))
-                      }
-                    >
-                      <X className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
+                </div>
+              </LexicalComposer>
+            </div>
 
             {/* Writing Assistant */}
             <div className="px-4 pb-2">
@@ -322,325 +638,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
                 <span className="text-sm font-semibold">Writing Assistant</span>
               </Button>
             </div>
-
-            {/* Formatting Toolbar */}
-            {showFormatting && editor && (
-              <div className="px-4 pb-2">
-                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 overflow-x-auto gap-1">
-                  {/* Undo/Redo */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-                        onClick={() => editor.chain().focus().undo().run()}
-                        disabled={!editor.can().undo()}
-                      >
-                        <Undo2 className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Undo</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-                        onClick={() => editor.chain().focus().redo().run()}
-                        disabled={!editor.can().redo()}
-                      >
-                        <Redo2 className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Redo</TooltipContent>
-                  </Tooltip>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Font Family */}
-                  <Select value={fontFamily} onValueChange={setFont}>
-                    <SelectTrigger className="h-8 w-[120px] border-0 bg-transparent hover:bg-gray-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FONT_FAMILIES.map((font) => (
-                        <SelectItem key={font.value} value={font.value}>
-                          {font.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Font Size */}
-                  <Select value={fontSize} onValueChange={setTextSize}>
-                    <SelectTrigger className="h-8 w-[100px] border-0 bg-transparent hover:bg-gray-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FONT_SIZES.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Text Formatting */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive('bold') && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                      >
-                        <Bold className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Bold</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive('italic') && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                      >
-                        <Italic className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Italic</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive('underline') && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                      >
-                        <UnderlineIcon className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Underline</TooltipContent>
-                  </Tooltip>
-
-                  {/* Text Color */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
-                        <div className="flex flex-col items-center">
-                          <span className="text-gray-600 font-bold text-lg">A</span>
-                          <div className="w-4 h-0.5 bg-gray-600 -mt-1"></div>
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64">
-                      <div className="grid grid-cols-10 gap-1 p-2">
-                        {TEXT_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
-                            style={{ backgroundColor: color }}
-                            onClick={() => editor.chain().focus().setColor(color).run()}
-                          />
-                        ))}
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Highlight Color */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
-                        <div className="flex flex-col items-center">
-                          <span className="text-gray-600 font-bold text-lg">A</span>
-                          <div className="w-4 h-0.5 bg-yellow-400 -mt-1"></div>
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48">
-                      <div className="grid grid-cols-8 gap-1 p-2">
-                        {HIGHLIGHT_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
-                            style={{ backgroundColor: color }}
-                            onClick={() => 
-                              color === 'transparent' 
-                                ? editor.chain().focus().unsetHighlight().run()
-                                : editor.chain().focus().setHighlight({ color }).run()
-                            }
-                          />
-                        ))}
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Alignment */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive({ textAlign: 'left' }) && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                      >
-                        <AlignLeft className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Align left</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive({ textAlign: 'center' }) && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                      >
-                        <AlignCenter className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Align center</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive({ textAlign: 'right' }) && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                      >
-                        <AlignRight className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Align right</TooltipContent>
-                  </Tooltip>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Lists */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive('bulletList') && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                      >
-                        <List className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Bulleted list</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:bg-gray-200 flex-shrink-0",
-                          editor.isActive('orderedList') && "bg-gray-300"
-                        )}
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                      >
-                        <ListOrdered className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Numbered list</TooltipContent>
-                  </Tooltip>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* Indent */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-                        onClick={() => editor.chain().focus().liftListItem('listItem').run()}
-                      >
-                        <IndentDecrease className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Decrease indent</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-                        onClick={() => editor.chain().focus().sinkListItem('listItem').run()}
-                      >
-                        <IndentIncrease className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Increase indent</TooltipContent>
-                  </Tooltip>
-
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-
-                  {/* More Options */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
-                        <EllipsisVertical className="h-4 w-4 text-gray-600" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
-                        <Strikethrough className="mr-2 h-4 w-4" />
-                        Strikethrough
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
-                        <RemoveFormatting className="mr-2 h-4 w-4" />
-                        Remove formatting
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between px-4 py-3">
@@ -669,13 +666,12 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   </DropdownMenu>
                 </ButtonGroup>
                 <div className="flex items-center">
-                  {/* Formatting toggle */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant='ghost'
                         className="font-semibold text-base p-1"
-                        onClick={() => setShowFormatting(!showFormatting)}
+                        onClick={toggleFormatting}
                       >
                         Aa
                       </Button>
@@ -684,7 +680,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
                       Text Formatting
                     </TooltipContent>
                   </Tooltip>
-                  {/* Editing options */}
                   {EditingOptions.map(({ Icon, hovercontent }, index) => (
                     <Tooltip key={index}>
                       <TooltipTrigger asChild>
