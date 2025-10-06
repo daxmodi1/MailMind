@@ -13,7 +13,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete, onArchive, onMarkRead, onMarkUnread, selectedEmails, emails }) {
+export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete, onArchive, onMarkRead, onMarkUnread, selectedEmails, emails, onRefresh }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const allSelected = selectedCount === totalCount && totalCount > 0;
   const someSelected = selectedCount > 0 && selectedCount < totalCount;
@@ -166,7 +166,7 @@ export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDes
           <button
             className="p-2 hover:bg-gray-100 rounded transition-colors"
             title="Refresh"
-            onClick={() => window.location.reload()}
+            onClick={onRefresh}
           >
             <RefreshCw className="w-4 h-4 text-gray-600" />
           </button>

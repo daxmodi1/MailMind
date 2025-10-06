@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 import { decodeHtmlEntities, formatDate, extractSenderName } from '@/lib/helprEmails';
 import { useEmailActions } from '@/lib/useEmailActions';
+import { AutoDeleteBadge } from './warningBadge';
 
 export default function UnifiedEmailComponent({ type, subtype }) {
   const [emails, setEmails] = useState([]);
@@ -73,6 +74,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   // 📩 Main UI
   return (
     <div className="flex flex-col h-full bg-white">
+      {(type === 'spam' || type == 'bin' || type == 'trash') && <AutoDeleteBadge folderType={type} />}
       <EmailNav
         selectedCount={selectedEmails.size}
         totalCount={emails.length}

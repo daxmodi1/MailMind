@@ -1,8 +1,11 @@
 'use client';
 
 import FetchEmails from '@/components/emailUI/fetch-emails';
+import { AutoDeleteBadge } from '@/components/emailUI/warningBadge';
 export default function SpamPage() {
   return (
-    <FetchEmails type="spam" />
+    <div>
+      <FetchEmails type="spam" />
+    </div>
   );
 }
