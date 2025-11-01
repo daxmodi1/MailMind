@@ -8,34 +8,36 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          scope:
-            "openid email profile https://mail.google.com/",
+          scope: "openid email profile https://mail.google.com/",
           access_type: "offline",
           prompt: "consent",
+          response_type: "code",
         },
       },
       httpOptions: {
-        timeout: 10000, // 10 seconds instead of default 3.5
+        timeout: 10000,
       },
     }),
   ],
+
   pages: {
     signIn: "/signin",
   },
+
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.expiresAt = account.expires_at;
+        token.refreshToken = account.refresh_token ?? token.refreshToken;
+        token.expiresAt = Date.now() + account.expires_in * 1000;
       }
       return token;
     },
+
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;
       session.expiresAt = token.expiresAt;
-
       session.user = {
         name: session.user.name,
         email: session.user.email,
@@ -43,11 +45,12 @@ export const authOptions = {
       };
       return session;
     },
+
     async redirect({ url, baseUrl }) {
-      if (url === baseUrl || url.startsWith(baseUrl + '/auth')) {
+      if (url === baseUrl || url.startsWith(baseUrl + "/auth")) {
         return `${baseUrl}/dashboard`;
       }
-      if (url.startsWith('/')) {
+      if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
       }
       if (new URL(url).origin === baseUrl) {
@@ -56,6 +59,7 @@ export const authOptions = {
       return baseUrl;
     },
   },
+
   secret: process.env.NEXTAUTH_SECRET,
 };
 
