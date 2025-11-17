@@ -9,7 +9,10 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
+import { $generateHtmlFromNodes } from "@lexical/html"
 import {
+  $getRoot,
+  $getSelection,
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   UNDO_COMMAND,
@@ -20,7 +23,7 @@ import {
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND
 } from 'lexical'
-import { $generateHtmlFromNodes } from '@lexical/html'
+
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list'
 import { LinkNode } from '@lexical/link'
@@ -429,15 +432,117 @@ export default function WriteMessage({ isOpen, onToggle }) {
     nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
   }), [])
 
+  // Replace the handleSend function (around line 432)
   const handleSend = useCallback(() => {
-    if (editorState) {
-      editorState.read(() => {
-        const htmlContent = $generateHtmlFromNodes(editorState._nodeMap)
-        console.log({ to, subject, message: htmlContent, cc, bcc, attachments })
-      })
+    if (!editorState) {
+      console.warn('No content to send')
+      return
     }
+
+    let emailContent = ''
+
+    editorState.read(() => {
+      const root = $getRoot()
+
+      // Get HTML content for rich formatting
+      try {
+        emailContent = $generateHtmlFromNodes(editorState, null)
+      } catch (error) {
+        // Fallback to plain text if HTML generation fails
+        emailContent = root.getTextContent()
+      }
+    })
+
+    // Validate required fields
+    if (!to.trim()) {
+      alert('Please enter a recipient email address')
+      return
+    }
+
+    if (!subject.trim()) {
+      alert('Please enter a subject')
+      return
+    }
+
+    if (!emailContent.trim()) {
+      alert('Please write a message')
+      return
+    }
+
+    // Email data object
+    const emailData = {
+      to: to.trim(),
+      subject: subject.trim(),
+      message: emailContent,
+      cc: cc.trim() || null,
+      bcc: bcc.trim() || null,
+      attachments: attachments || [],
+      timestamp: new Date().toISOString(),
+      format: 'html' // Since we're using HTML content
+    }
+
+    console.log('Sending email:', emailData)
+
+    // Here you would integrate with your email sending service
+    // Examples:
+
+    // Option 1: Send via API
+    sendEmailViaAPI(emailData)
+
+    // Option 2: Send via backend endpoint
+    // fetch('/api/send-email', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(emailData)
+    // })
+
+    // Show success message
+    alert('Email sent successfully!')
+
+    // Clear form after sending
+    resetForm()
+
   }, [editorState, to, subject, cc, bcc, attachments])
 
+  // Add these helper functions after handleSend
+  const sendEmailViaAPI = useCallback(async (emailData) => {
+    try {
+      // Replace with your actual email service (e.g., SendGrid, Mailgun, etc.)
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`Email sending failed: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      console.log('Email sent successfully:', result)
+      return result
+
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert(`Failed to send email: ${error.message}`)
+      throw error
+    }
+  }, [])
+
+  const resetForm = useCallback(() => {
+    setTo('')
+    setSubject('')
+    setCc('')
+    setBcc('')
+    setAttachments([])
+    setEditorState(null)
+
+    // Clear the editor content
+    // This will reset the editor to initial state
+    setShowFormatting(false)
+  }, [])
   const toggleMinimized = useCallback(() => {
     setIsMinimized(prev => !prev)
     setIsMaximized(false)
