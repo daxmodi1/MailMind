@@ -5,7 +5,7 @@ import {
   LexicalComposer, RichTextPlugin, ContentEditable,
   HistoryPlugin, ListPlugin, LinkPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
   $generateHtmlFromNodes,
-  $getRoot, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
+  $getRoot, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
   CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,
   INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND, HeadingNode, QuoteNode,
   ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND,
@@ -92,36 +92,6 @@ function ToolbarPlugin({
 
   return (
     <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 gap-0.5 flex-wrap justify-start">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
-            onClick={handleUndo}
-            disabled={!canUndo}
-          >
-            <Undo2 className="h-4 w-4 text-gray-600" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Undo</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
-            onClick={handleRedo}
-            disabled={!canRedo}
-          >
-            <Redo2 className="h-4 w-4 text-gray-600" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Redo</TooltipContent>
-      </Tooltip>
-
       <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       {/* Font Family */}
@@ -231,26 +201,6 @@ function ToolbarPlugin({
         <TooltipContent>Numbered list</TooltipContent>
       </Tooltip>
 
-      <div className="w-px h-6 bg-gray-300 mx-0.5" />
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentDecrease}>
-            <IndentDecrease className="h-4 w-4 text-gray-600" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Decrease indent</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentIncrease}>
-            <IndentIncrease className="h-4 w-4 text-gray-600" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Increase indent</TooltipContent>
-      </Tooltip>
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200">
@@ -308,6 +258,34 @@ export default function WriteMessage({ isOpen, onToggle }) {
     onError: (error) => console.error('Lexical error:', error),
     nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
   }), [])
+
+  /* Register listeners for CAN_UNDO and CAN_REDO commands */
+  useEffect(() => {
+    if (!editorInstance) return
+
+    const unregisterUndo = editorInstance.registerCommand(
+      CAN_UNDO_COMMAND,
+      (payload) => {
+        setCanUndo(payload)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+
+    const unregisterRedo = editorInstance.registerCommand(
+      CAN_REDO_COMMAND,
+      (payload) => {
+        setCanRedo(payload)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+
+    return () => {
+      unregisterUndo()
+      unregisterRedo()
+    }
+  }, [editorInstance])
 
   /* ---------- Send email API helper ----------
      Keep your existing /api/send-email endpoint.
@@ -380,6 +358,30 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const toggleCC = useCallback(() => setShowCC(prev => !prev), [])
   const toggleBCC = useCallback(() => setShowBCC(prev => !prev), [])
   const toggleFormatting = useCallback(() => setShowFormatting(prev => !prev), [])
+
+  const handleUndo = useCallback(() => {
+    if (editorInstance) {
+      editorInstance.dispatchCommand(UNDO_COMMAND, undefined)
+    }
+  }, [editorInstance])
+
+  const handleRedo = useCallback(() => {
+    if (editorInstance) {
+      editorInstance.dispatchCommand(REDO_COMMAND, undefined)
+    }
+  }, [editorInstance])
+
+  const handleIndentDecrease = useCallback(() => {
+    if (editorInstance) {
+      editorInstance.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
+    }
+  }, [editorInstance])
+
+  const handleIndentIncrease = useCallback(() => {
+    if (editorInstance) {
+      editorInstance.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
+    }
+  }, [editorInstance])
 
   const fileInputRef = useRef(null)
   const handleAttachClick = useCallback(() => {
@@ -699,6 +701,58 @@ export default function WriteMessage({ isOpen, onToggle }) {
                 </ButtonGroup>
 
                 <div className="flex items-center">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
+                        onClick={handleUndo}
+                        disabled={!canUndo}
+                      >
+                        <Undo2 className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Undo</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
+                        onClick={handleRedo}
+                        disabled={!canRedo}
+                      >
+                        <Redo2 className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Redo</TooltipContent>
+                  </Tooltip>
+
+                  <div className="w-px h-6 bg-gray-300 mx-0.5" />
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant='ghost' size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentDecrease}>
+                        <IndentDecrease className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Decrease indent</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant='ghost' size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentIncrease}>
+                        <IndentIncrease className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Increase indent</TooltipContent>
+                  </Tooltip>
+
+                  <div className="w-px h-6 bg-gray-300 mx-0.5" />
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant='ghost' className="font-semibold text-base p-1" onClick={toggleFormatting}>
