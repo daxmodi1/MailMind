@@ -1,7 +1,9 @@
 'use client'
-import {useState, useCallback, useMemo, useEffect, useRef, cn,
+import ConfidentialModeComponent from "./ConfidentialModePlugin"
+import {
+  useState, useCallback, useMemo, useEffect, useRef, cn,
   LexicalComposer, RichTextPlugin, ContentEditable,
-  HistoryPlugin, ListPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
+  HistoryPlugin, ListPlugin, LinkPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
   $generateHtmlFromNodes,
   $getRoot, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
   CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,
@@ -10,14 +12,14 @@ import {useState, useCallback, useMemo, useEffect, useRef, cn,
   LinkNode, Sparkles, Maximize2, Minus, X, Trash2, EllipsisVertical,
   Bold, Italic, UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, MdScheduleSend, FaCaretDown, Undo2, Redo2,
-  IndentDecrease, IndentIncrease, Strikethrough,    Button, Input, DropdownMenu, DropdownMenuContent,
+  IndentDecrease, IndentIncrease, Strikethrough, Button, Input, DropdownMenu, DropdownMenuContent,
   DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger, ButtonGroup,
   Tooltip, TooltipContent, TooltipTrigger, Separator,
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "./import"
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "./import"
 
-import { EditingOptions, FONT_FAMILIES, FONT_SIZES, editorTheme} from "./Editing-options"
-
-
+import { EditingOptions, FONT_FAMILIES, FONT_SIZES, editorTheme } from "./Editing-options"
+import { EmojiPickerComponent } from "./EmojiPickerPlugin"
 /* ---------- EditorRefPlugin ----------
    Captures the Lexical editor instance and
    exposes it to the parent via setEditor.
@@ -289,7 +291,17 @@ export default function WriteMessage({ isOpen, onToggle }) {
 
   // The actual Lexical editor instance reference
   const [editorInstance, setEditorInstance] = useState(null)
+  const [isConfidential, setIsConfidential] = useState(false)
+  const [confidentialData, setConfidentialData] = useState(null)
 
+  const handleConfidentialToggle = useCallback((data) => {
+    setConfidentialData(data)
+    if (data) {
+      console.log('Confidential mode enabled:', data)
+    } else {
+      console.log('Confidential mode disabled')
+    }
+  }, [])
   const initialConfig = useMemo(() => ({
     namespace: 'EmailEditor',
     theme: editorTheme,
@@ -311,6 +323,8 @@ export default function WriteMessage({ isOpen, onToggle }) {
     setAttachments([])
     setEditorStateSnapshot(null)
     setShowFormatting(false)
+    setIsConfidential(false)
+    setConfidentialData(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -326,7 +340,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
       }
     }
   }, [editorInstance])
-
   const sendEmailViaAPI = useCallback(async (emailData) => {
     try {
       const response = await fetch('/api/send-email', {
@@ -388,6 +401,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
   }, [])
 
   const handleSend = useCallback(async () => {
+    // Basic validation
     if (!editorInstance) {
       alert('Editor not ready')
       return
@@ -403,26 +417,27 @@ export default function WriteMessage({ isOpen, onToggle }) {
       return
     }
 
+    // Extract email content from Lexical editor
     let emailContent = ''
-
     try {
       editorInstance.update(() => {
         try {
           const html = $generateHtmlFromNodes(editorInstance, null)
           emailContent = html
         } catch (inner) {
-          console.warn('Inner HTML generation failed inside update():', inner)
+          console.warn('Inner HTML generation failed:', inner)
           emailContent = ''
         }
       })
     } catch (error) {
-      console.error('Error generating HTML (update):', error)
+      console.error('Error generating HTML:', error)
     }
 
+    // Fallback: if HTML empty, read plain text
     if (!emailContent || emailContent.trim() === '') {
       try {
-        const editorState = editorInstance.getEditorState && editorInstance.getEditorState()
-        if (editorState && editorState.read) {
+        const editorState = editorInstance.getEditorState?.()
+        if (editorState?.read) {
           editorState.read(() => {
             const root = $getRoot()
             emailContent = root.getTextContent()
@@ -450,6 +465,15 @@ export default function WriteMessage({ isOpen, onToggle }) {
     emailData.append('cc', cc.trim() || '')
     emailData.append('bcc', bcc.trim() || '')
 
+    // Add confidential mode data
+    if (confidentialData) {
+      emailData.append('confidential', JSON.stringify({
+        enabled: true,
+        expiry: confidentialData.expiry,
+        passcode: confidentialData.passcode,
+      }))
+    }
+
     // Add attachments
     for (const file of attachments) {
       console.log(`Adding attachment: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`)
@@ -457,7 +481,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
     }
 
     console.log('Sending email with', attachments.length, 'attachments to:', to.trim())
-    console.log('Subject:', subject.trim())
+    console.log('Confidential:', confidentialData)
 
     try {
       await sendEmailViaAPI(emailData)
@@ -465,8 +489,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
       console.error('Error sending email:', error)
     }
 
-  }, [editorInstance, to, subject, cc, bcc, attachments, sendEmailViaAPI])
-
+  }, [editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI])
   if (!isOpen) return null
   return (
     <>
@@ -619,6 +642,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   />
                   <HistoryPlugin />
                   <ListPlugin />
+                  <LinkPlugin />
                   <OnChangePlugin onChange={(editorState) => setEditorStateSnapshot(editorState)} />
                   {showFormatting && (
                     <div className="mt-4">
@@ -684,13 +708,45 @@ export default function WriteMessage({ isOpen, onToggle }) {
                     <TooltipContent>Text Formatting</TooltipContent>
                   </Tooltip>
 
-                  {EditingOptions.map(({ Icon, hovercontent }, index) => (
+                  {/* Emoji Picker Component */}
+                  <EmojiPickerComponent editorInstance={editorInstance} />
+                  <ConfidentialModeComponent onToggle={handleConfidentialToggle} />
+                  {/* Other editing options */}
+                  {EditingOptions.map(({ Icon, hovercontent, action }, index) => (
                     <Tooltip key={index}>
                       <TooltipTrigger asChild>
                         <Button
                           variant='ghost'
                           className="font-semibold text-base p-2"
-                          onClick={hovercontent === 'Attach files' ? handleAttachClick : undefined}
+                          onClick={() => {
+                            switch (action) {
+                              case 'attach':
+                                handleAttachClick()
+                                break
+                              case 'help':
+                                console.log('Help me write clicked')
+                                // Add your help write functionality here
+                                break
+                              case 'link':
+                                console.log('Insert link clicked')
+                                // Add insert link functionality
+                                break
+                              case 'drive':
+                                console.log('Insert from Drive clicked')
+                                break
+                              case 'image':
+                                console.log('Insert image clicked')
+                                break
+                              case 'confidential':
+                                console.log('Toggle confidential mode clicked')
+                                break
+                              case 'signature':
+                                console.log('Insert signature clicked')
+                                break
+                              default:
+                                break
+                            }
+                          }}
                         >
                           <Icon className="h-5 w-5 text-gray-600" />
                         </Button>

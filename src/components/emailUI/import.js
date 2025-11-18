@@ -8,6 +8,7 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
+import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { $generateHtmlFromNodes } from "@lexical/html"
@@ -48,7 +49,7 @@ import {
 
 export {useState, useCallback, useMemo, useEffect, useRef, cn,
   LexicalComposer, RichTextPlugin, ContentEditable,
-  HistoryPlugin, ListPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
+  HistoryPlugin, ListPlugin, LinkPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
   $generateHtmlFromNodes,
   $getRoot, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
   CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,

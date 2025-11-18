@@ -1,15 +1,10 @@
 import { Link2, Smile, MdAddToDrive, MdOutlineImage, MdLockClock, FaCaretDown,
-  FaPenAlt, FaWandMagicSparkles, BsPaperclip} from "./import"
+  FaPenAlt, FaWandMagicSparkles, BsPaperclip} from "@/lib/Icon-utils"
 
 const EditingOptions = [
-  { Icon: BsPaperclip, hovercontent: 'Attach files' },
-  { Icon: FaWandMagicSparkles, hovercontent: 'Help me write' },
-  { Icon: Link2, hovercontent: 'Insert link' },
-  { Icon: Smile, hovercontent: 'Insert emoji' },
-  { Icon: MdAddToDrive, hovercontent: 'Insert from Drive' },
-  { Icon: MdOutlineImage, hovercontent: 'Insert image' },
-  { Icon: MdLockClock, hovercontent: 'Toggle confidential mode' },
-  { Icon: FaPenAlt, hovercontent: 'Insert Signature' },
+  { Icon: BsPaperclip, hovercontent: 'Attach files', action: 'attach' },
+  { Icon: FaWandMagicSparkles, hovercontent: 'Help me write', action: 'help' },
+  { Icon: FaPenAlt, hovercontent: 'Insert Signature', action: 'signature' },
 ]
 
 const FONT_FAMILIES = [
@@ -43,4 +38,5 @@ const editorTheme = {
     listitem: 'ml-2',
   },
 }
+
 export { EditingOptions, FONT_FAMILIES, FONT_SIZES, editorTheme }

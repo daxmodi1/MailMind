@@ -23,6 +23,18 @@ export async function POST(req) {
         const cc = formData.get('cc')
         const bcc = formData.get('bcc')
         const attachmentFiles = formData.getAll('attachments')
+        
+        // Parse confidential mode data
+        const confidentialStr = formData.get('confidential')
+        let confidentialMode = null
+        if (confidentialStr) {
+            try {
+                confidentialMode = JSON.parse(confidentialStr)
+                console.log('Confidential mode enabled:', confidentialMode)
+            } catch (err) {
+                console.warn('Failed to parse confidential data:', err)
+            }
+        }
 
         if (!to || !to.trim())
             return NextResponse.json({ error: "Recipient email required" }, { status: 400 })
@@ -45,6 +57,17 @@ export async function POST(req) {
         if (bcc && bcc.trim()) emailLines.push(`Bcc: ${bcc}`)
         emailLines.push(`Subject: ${subject}`)
         emailLines.push('MIME-Version: 1.0')
+        
+        // Add confidential mode headers
+        if (confidentialMode && confidentialMode.enabled) {
+            emailLines.push(`X-Gm-Confidential: true`)
+            if (confidentialMode.expiry) {
+                emailLines.push(`X-Gm-Confidential-Expiry: ${confidentialMode.expiry}T23:59:59Z`)
+            }
+            if (confidentialMode.passcode) {
+                emailLines.push(`X-Gm-Confidential-Passcode: true`)
+            }
+        }
         
         if (attachmentFiles.length > 0) {
             // With attachments: multipart/mixed
