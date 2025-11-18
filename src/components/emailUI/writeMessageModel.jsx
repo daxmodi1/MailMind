@@ -1,93 +1,22 @@
 'use client'
+import {useState, useCallback, useMemo, useEffect, useRef, cn,
+  LexicalComposer, RichTextPlugin, ContentEditable,
+  HistoryPlugin, ListPlugin, OnChangePlugin, useLexicalComposerContext, LexicalErrorBoundary,
+  $generateHtmlFromNodes,
+  $getRoot, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
+  CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,
+  INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND, HeadingNode, QuoteNode,
+  ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND,
+  LinkNode, Sparkles, Maximize2, Minus, X, Trash2, EllipsisVertical,
+  Bold, Italic, UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
+  List, ListOrdered, MdScheduleSend, FaCaretDown, Undo2, Redo2,
+  IndentDecrease, IndentIncrease, Strikethrough,    Button, Input, DropdownMenu, DropdownMenuContent,
+  DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger, ButtonGroup,
+  Tooltip, TooltipContent, TooltipTrigger, Separator,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "./import"
 
-import React, { useState, useCallback, useMemo, useEffect } from "react"
-import { cn } from "@/lib/utils"
-import { LexicalComposer } from '@lexical/react/LexicalComposer'
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
-import { ContentEditable } from '@lexical/react/LexicalContentEditable'
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
-import { ListPlugin } from '@lexical/react/LexicalListPlugin'
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
-import { $generateHtmlFromNodes } from "@lexical/html"
-import {
-  $getRoot,
-  $getSelection,
-  FORMAT_TEXT_COMMAND,
-  FORMAT_ELEMENT_COMMAND,
-  UNDO_COMMAND,
-  REDO_COMMAND,
-  CAN_UNDO_COMMAND,
-  CAN_REDO_COMMAND,
-  COMMAND_PRIORITY_LOW,
-  INDENT_CONTENT_COMMAND,
-  OUTDENT_CONTENT_COMMAND
-} from 'lexical'
+import { EditingOptions, FONT_FAMILIES, FONT_SIZES, editorTheme} from "./Editing-options"
 
-import { HeadingNode, QuoteNode } from '@lexical/rich-text'
-import { ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list'
-import { LinkNode } from '@lexical/link'
-import { Sparkles } from "./sparkels"
-
-// ICONS & UI COMPONENTS (adjust paths if necessary)
-import {
-  Maximize2, Minus, X, Link2, Smile, Trash2, EllipsisVertical,
-  Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
-  List, ListOrdered, MdScheduleSend, MdAddToDrive, MdOutlineImage,
-  MdLockClock, FaCaretDown, FaPenAlt, FaWandMagicSparkles, BsPaperclip,
-  Undo2, Redo2, IndentDecrease, IndentIncrease, Strikethrough
-} from "@/lib/Icon-utils"
-
-import {
-  Button, Input, DropdownMenu, DropdownMenuContent, DropdownMenuGroup,
-  DropdownMenuItem, DropdownMenuTrigger, ButtonGroup, Tooltip,
-  TooltipContent, TooltipTrigger, Separator, Select, SelectContent,
-  SelectItem, SelectTrigger, SelectValue
-} from "@/lib/shadcnComp"
-
-const EditingOptions = [
-  { Icon: BsPaperclip, hovercontent: 'Attach files' },
-  { Icon: FaWandMagicSparkles, hovercontent: 'Help me write' },
-  { Icon: Link2, hovercontent: 'Insert link' },
-  { Icon: Smile, hovercontent: 'Insert emoji' },
-  { Icon: MdAddToDrive, hovercontent: 'Insert from Drive' },
-  { Icon: MdOutlineImage, hovercontent: 'Insert image' },
-  { Icon: MdLockClock, hovercontent: 'Toggle confidential mode' },
-  { Icon: FaPenAlt, hovercontent: 'Insert Signature' },
-]
-
-const FONT_FAMILIES = [
-  { value: 'Arial', label: 'Sans Serif' },
-  { value: 'Georgia', label: 'Serif' },
-  { value: 'Courier New', label: 'Fixed Width' },
-  { value: 'Comic Sans MS', label: 'Wide' },
-  { value: 'Garamond', label: 'Narrow' },
-  { value: 'Tahoma', label: 'Tahoma' },
-  { value: 'Verdana', label: 'Verdana' },
-]
-
-const FONT_SIZES = [
-  { value: '12px', label: 'Small' },
-  { value: '14px', label: 'Normal' },
-  { value: '18px', label: 'Large' },
-  { value: '24px', label: 'Huge' },
-]
-
-const editorTheme = {
-  paragraph: 'mb-1',
-  text: {
-    bold: 'font-bold',
-    italic: 'italic',
-    underline: 'underline',
-    strikethrough: 'line-through',
-  },
-  list: {
-    ul: 'list-disc ml-5',
-    ol: 'list-decimal ml-5',
-    listitem: 'ml-2',
-  },
-}
 
 /* ---------- EditorRefPlugin ----------
    Captures the Lexical editor instance and
@@ -160,13 +89,13 @@ function ToolbarPlugin({
   const handleIndentIncrease = useCallback(() => editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined), [editor])
 
   return (
-    <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 overflow-x-auto gap-1">
+    <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 gap-0.5 flex-wrap justify-start">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0 disabled:opacity-50"
+            className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
             onClick={handleUndo}
             disabled={!canUndo}
           >
@@ -181,7 +110,7 @@ function ToolbarPlugin({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0 disabled:opacity-50"
+            className="h-8 w-8 hover:bg-gray-200 disabled:opacity-50"
             onClick={handleRedo}
             disabled={!canRedo}
           >
@@ -191,10 +120,11 @@ function ToolbarPlugin({
         <TooltipContent>Redo</TooltipContent>
       </Tooltip>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
+      {/* Font Family */}
       <Select value={fontFamily} onValueChange={setFont}>
-        <SelectTrigger className="h-8 w-[120px] border-0 bg-transparent hover:bg-gray-200">
+        <SelectTrigger className="h-8 w-[100px] border-0 bg-transparent hover:bg-gray-200 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -206,10 +136,10 @@ function ToolbarPlugin({
         </SelectContent>
       </Select>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       <Select value={fontSize} onValueChange={setTextSize}>
-        <SelectTrigger className="h-8 w-[100px] border-0 bg-transparent hover:bg-gray-200">
+        <SelectTrigger className="h-8 w-[80px] border-0 bg-transparent hover:bg-gray-200 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -221,11 +151,11 @@ function ToolbarPlugin({
         </SelectContent>
       </Select>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatBold}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatBold}>
             <Bold className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -234,7 +164,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatItalic}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatItalic}>
             <Italic className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -243,18 +173,18 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatUnderline}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatUnderline}>
             <UnderlineIcon className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Underline</TooltipContent>
       </Tooltip>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignLeft}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignLeft}>
             <AlignLeft className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -263,7 +193,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignCenter}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignCenter}>
             <AlignCenter className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -272,18 +202,18 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignRight}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignRight}>
             <AlignRight className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align right</TooltipContent>
       </Tooltip>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={insertBulletList}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={insertBulletList}>
             <List className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -292,18 +222,18 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={insertOrderedList}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={insertOrderedList}>
             <ListOrdered className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Numbered list</TooltipContent>
       </Tooltip>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={handleIndentDecrease}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentDecrease}>
             <IndentDecrease className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -312,7 +242,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={handleIndentIncrease}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={handleIndentIncrease}>
             <IndentIncrease className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -321,7 +251,7 @@ function ToolbarPlugin({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200">
             <EllipsisVertical className="h-4 w-4 text-gray-600" />
           </Button>
         </DropdownMenuTrigger>
@@ -371,34 +301,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
      Keep your existing /api/send-email endpoint.
      This function POSTs JSON and handles responses.
   ------------------------------------------*/
-  const sendEmailViaAPI = useCallback(async (emailData) => {
-    try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData)
-      })
-
-      const result = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(result.error || `Email sending failed: ${response.statusText}`)
-      }
-
-      console.log('Email sent successfully:', result)
-      alert('Email sent successfully!')
-      resetForm()
-      onToggle?.()
-      return result
-
-    } catch (error) {
-      console.error('Error sending email:', error)
-      alert(`Failed to send email: ${error.message}`)
-      throw error
-    }
-  }, [onToggle])
 
   // Reset all fields and editor state
   const resetForm = useCallback(() => {
@@ -409,20 +311,48 @@ export default function WriteMessage({ isOpen, onToggle }) {
     setAttachments([])
     setEditorStateSnapshot(null)
     setShowFormatting(false)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
 
-    // Reset Lexical editor content if instance available
     if (editorInstance) {
       try {
         editorInstance.update(() => {
           const root = $getRoot()
-          root.clear() // clear content
+          root.clear()
         })
       } catch (err) {
-        // best-effort
         console.warn('Failed to clear editor content:', err)
       }
     }
   }, [editorInstance])
+
+  const sendEmailViaAPI = useCallback(async (emailData) => {
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        body: emailData
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        console.error('Email send error response:', result)
+        throw new Error(result.error || `Email sending failed: ${response.statusText}`)
+      }
+
+      console.log('Email sent successfully:', result)
+      alert(`Email sent successfully with ID: ${result.messageId}`)
+      resetForm()
+      onToggle?.()
+      return result
+
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert(`Failed to send email: ${error.message}`)
+      throw error
+    }
+  }, [onToggle, resetForm])
 
   const toggleMinimized = useCallback(() => {
     setIsMinimized(prev => !prev)
@@ -438,12 +368,26 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const toggleBCC = useCallback(() => setShowBCC(prev => !prev), [])
   const toggleFormatting = useCallback(() => setShowFormatting(prev => !prev), [])
 
-  /* ---------- handleSend ----------
-     Generate HTML via editor.update() — this is the correct, safe way.
-     If HTML generation fails we fallback to plain text via read().
-  ----------------------------------*/
+  const fileInputRef = useRef(null)
+  const handleAttachClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileSelect = useCallback((e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setAttachments(prev => [...prev, ...files])
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [])
+
+  const removeAttachment = useCallback((index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
   const handleSend = useCallback(async () => {
-    // basic validation
     if (!editorInstance) {
       alert('Editor not ready')
       return
@@ -462,16 +406,11 @@ export default function WriteMessage({ isOpen, onToggle }) {
     let emailContent = ''
 
     try {
-      // Use editor.update so that $-helpers can be used safely.
       editorInstance.update(() => {
-        // $generateHtmlFromNodes accepts an EditorState or node list.
-        // Passing the editor instance here has worked reliably in prior Lexical usage
-        // — this is the same pattern used in the patch above.
         try {
           const html = $generateHtmlFromNodes(editorInstance, null)
           emailContent = html
         } catch (inner) {
-          // If html generation inside update() throws, swallow and fallback below
           console.warn('Inner HTML generation failed inside update():', inner)
           emailContent = ''
         }
@@ -480,10 +419,8 @@ export default function WriteMessage({ isOpen, onToggle }) {
       console.error('Error generating HTML (update):', error)
     }
 
-    // Fallback: if HTML empty, read plain text (safe read)
     if (!emailContent || emailContent.trim() === '') {
       try {
-        // getEditorState().read uses a read-only transform
         const editorState = editorInstance.getEditorState && editorInstance.getEditorState()
         if (editorState && editorState.read) {
           editorState.read(() => {
@@ -491,7 +428,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
             emailContent = root.getTextContent()
           })
         } else {
-          // as a final fallback, attempt a small read via update (best-effort)
           editorInstance.update(() => {
             const root = $getRoot()
             emailContent = root.getTextContent()
@@ -507,15 +443,21 @@ export default function WriteMessage({ isOpen, onToggle }) {
       return
     }
 
-    const emailData = {
-      to: to.trim(),
-      subject: subject.trim(),
-      message: emailContent,
-      cc: cc.trim() || null,
-      bcc: bcc.trim() || null,
+    const emailData = new FormData()
+    emailData.append('to', to.trim())
+    emailData.append('subject', subject.trim())
+    emailData.append('message', emailContent)
+    emailData.append('cc', cc.trim() || '')
+    emailData.append('bcc', bcc.trim() || '')
+
+    // Add attachments
+    for (const file of attachments) {
+      console.log(`Adding attachment: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`)
+      emailData.append('attachments', file)
     }
 
-    console.log('Sending email:', emailData)
+    console.log('Sending email with', attachments.length, 'attachments to:', to.trim())
+    console.log('Subject:', subject.trim())
 
     try {
       await sendEmailViaAPI(emailData)
@@ -523,12 +465,20 @@ export default function WriteMessage({ isOpen, onToggle }) {
       console.error('Error sending email:', error)
     }
 
-  }, [editorInstance, to, subject, cc, bcc, sendEmailViaAPI])
+  }, [editorInstance, to, subject, cc, bcc, attachments, sendEmailViaAPI])
 
   if (!isOpen) return null
-
   return (
     <>
+      {/* Hidden file input for attachments */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+
       {isMaximized && (
         <div
           className="fixed inset-0 bg-black/20 z-40"
@@ -631,6 +581,27 @@ export default function WriteMessage({ isOpen, onToggle }) {
                 {/* get editor instance into state */}
                 <EditorRefPlugin setEditor={setEditorInstance} />
 
+                {/* Attachments list */}
+                {attachments.length > 0 && (
+                  <div className="mb-3 p-3 border border-gray-200 bg-gray-50 rounded">
+                    <div className="text-xs font-semibold text-gray-600 mb-2">Attachments ({attachments.length})</div>
+                    <div className="flex flex-wrap gap-2">
+                      {attachments.map((file, index) => (
+                        <div key={index} className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-300 text-xs">
+                          <span className="text-gray-700 truncate max-w-[150px]">{file.name}</span>
+                          <span className="text-gray-500">({(file.size / 1024).toFixed(1)}KB)</span>
+                          <button
+                            onClick={() => removeAttachment(index)}
+                            className="ml-1 text-gray-400 hover:text-red-500 font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative">
                   <RichTextPlugin
                     contentEditable={
@@ -716,7 +687,11 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   {EditingOptions.map(({ Icon, hovercontent }, index) => (
                     <Tooltip key={index}>
                       <TooltipTrigger asChild>
-                        <Button variant='ghost' className="font-semibold text-base p-2">
+                        <Button
+                          variant='ghost'
+                          className="font-semibold text-base p-2"
+                          onClick={hovercontent === 'Attach files' ? handleAttachClick : undefined}
+                        >
                           <Icon className="h-5 w-5 text-gray-600" />
                         </Button>
                       </TooltipTrigger>
