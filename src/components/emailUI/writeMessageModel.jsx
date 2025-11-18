@@ -1,5 +1,6 @@
 'use client'
-import { useState, useCallback, useMemo } from "react"
+
+import React, { useState, useCallback, useMemo, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
@@ -29,15 +30,15 @@ import { ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_L
 import { LinkNode } from '@lexical/link'
 import { Sparkles } from "./sparkels"
 
-// ...rest of your code stays the same...
-
+// ICONS & UI COMPONENTS (adjust paths if necessary)
 import {
   Maximize2, Minus, X, Link2, Smile, Trash2, EllipsisVertical,
   Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, MdScheduleSend, MdAddToDrive, MdOutlineImage,
   MdLockClock, FaCaretDown, FaPenAlt, FaWandMagicSparkles, BsPaperclip,
-  Undo2, Redo2, IndentDecrease, IndentIncrease, Strikethrough, RemoveFormatting
+  Undo2, Redo2, IndentDecrease, IndentIncrease, Strikethrough
 } from "@/lib/Icon-utils"
+
 import {
   Button, Input, DropdownMenu, DropdownMenuContent, DropdownMenuGroup,
   DropdownMenuItem, DropdownMenuTrigger, ButtonGroup, Tooltip,
@@ -88,6 +89,24 @@ const editorTheme = {
   },
 }
 
+/* ---------- EditorRefPlugin ----------
+   Captures the Lexical editor instance and
+   exposes it to the parent via setEditor.
+   This is required so you can call editor.update()
+   to safely run $generateHtmlFromNodes.
+--------------------------------------*/
+function EditorRefPlugin({ setEditor }) {
+  const [editor] = useLexicalComposerContext()
+  useEffect(() => {
+    setEditor(editor)
+    // cleanup not required for this simple case
+  }, [editor, setEditor])
+  return null
+}
+
+/* ---------- ToolbarPlugin ----------
+   Uses editor commands to control formatting.
+--------------------------------------*/
 function ToolbarPlugin({
   fontFamily,
   fontSize,
@@ -100,9 +119,9 @@ function ToolbarPlugin({
 }) {
   const [editor] = useLexicalComposerContext()
 
-  // Track undo/redo state
-  useMemo(() => {
-    return editor.registerCommand(
+  useEffect(() => {
+    if (!editor || !onCanUndoChange) return
+    const unregister = editor.registerCommand(
       CAN_UNDO_COMMAND,
       (payload) => {
         onCanUndoChange(payload)
@@ -110,10 +129,12 @@ function ToolbarPlugin({
       },
       COMMAND_PRIORITY_LOW
     )
+    return () => unregister()
   }, [editor, onCanUndoChange])
 
-  useMemo(() => {
-    return editor.registerCommand(
+  useEffect(() => {
+    if (!editor || !onCanRedoChange) return
+    const unregister = editor.registerCommand(
       CAN_REDO_COMMAND,
       (payload) => {
         onCanRedoChange(payload)
@@ -121,62 +142,25 @@ function ToolbarPlugin({
       },
       COMMAND_PRIORITY_LOW
     )
+    return () => unregister()
   }, [editor, onCanRedoChange])
 
-  const formatBold = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')
-  }, [editor])
+  const formatBold = useCallback(() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold'), [editor])
+  const formatItalic = useCallback(() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic'), [editor])
+  const formatUnderline = useCallback(() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline'), [editor])
+  const formatStrikethrough = useCallback(() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough'), [editor])
+  const formatAlignLeft = useCallback(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left'), [editor])
+  const formatAlignCenter = useCallback(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center'), [editor])
+  const formatAlignRight = useCallback(() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right'), [editor])
+  const insertBulletList = useCallback(() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined), [editor])
+  const insertOrderedList = useCallback(() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined), [editor])
+  const handleUndo = useCallback(() => editor.dispatchCommand(UNDO_COMMAND, undefined), [editor])
+  const handleRedo = useCallback(() => editor.dispatchCommand(REDO_COMMAND, undefined), [editor])
+  const handleIndentDecrease = useCallback(() => editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined), [editor])
+  const handleIndentIncrease = useCallback(() => editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined), [editor])
 
-  const formatItalic = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')
-  }, [editor])
-
-  const formatUnderline = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')
-  }, [editor])
-
-  const formatStrikethrough = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')
-  }, [editor])
-
-  const formatAlignLeft = useCallback(() => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')
-  }, [editor])
-
-  const formatAlignCenter = useCallback(() => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')
-  }, [editor])
-
-  const formatAlignRight = useCallback(() => {
-    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')
-  }, [editor])
-
-  const insertBulletList = useCallback(() => {
-    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
-  }, [editor])
-
-  const insertOrderedList = useCallback(() => {
-    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)
-  }, [editor])
-
-  const handleUndo = useCallback(() => {
-    editor.dispatchCommand(UNDO_COMMAND, undefined)
-  }, [editor])
-
-  const handleRedo = useCallback(() => {
-    editor.dispatchCommand(REDO_COMMAND, undefined)
-  }, [editor])
-
-  const handleIndentDecrease = useCallback(() => {
-    editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
-  }, [editor])
-
-  const handleIndentIncrease = useCallback(() => {
-    editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
-  }, [editor])
   return (
     <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 overflow-x-auto gap-1">
-      {/* Undo/Redo */}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -209,7 +193,6 @@ function ToolbarPlugin({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Font Family */}
       <Select value={fontFamily} onValueChange={setFont}>
         <SelectTrigger className="h-8 w-[120px] border-0 bg-transparent hover:bg-gray-200">
           <SelectValue />
@@ -225,7 +208,6 @@ function ToolbarPlugin({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Font Size */}
       <Select value={fontSize} onValueChange={setTextSize}>
         <SelectTrigger className="h-8 w-[100px] border-0 bg-transparent hover:bg-gray-200">
           <SelectValue />
@@ -241,15 +223,9 @@ function ToolbarPlugin({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Text Formatting */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatBold}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatBold}>
             <Bold className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -258,12 +234,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatItalic}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatItalic}>
             <Italic className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -272,12 +243,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatUnderline}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatUnderline}>
             <UnderlineIcon className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -286,15 +252,9 @@ function ToolbarPlugin({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Alignment */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatAlignLeft}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignLeft}>
             <AlignLeft className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -303,12 +263,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatAlignCenter}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignCenter}>
             <AlignCenter className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -317,12 +272,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={formatAlignRight}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={formatAlignRight}>
             <AlignRight className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -331,15 +281,9 @@ function ToolbarPlugin({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Lists */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={insertBulletList}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={insertBulletList}>
             <List className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -348,12 +292,7 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={insertOrderedList}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={insertOrderedList}>
             <ListOrdered className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -361,16 +300,10 @@ function ToolbarPlugin({
       </Tooltip>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
-      {/* Indent */}
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={handleIndentDecrease}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={handleIndentDecrease}>
             <IndentDecrease className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
@@ -379,18 +312,13 @@ function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-gray-200 flex-shrink-0"
-            onClick={handleIndentIncrease}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0" onClick={handleIndentIncrease}>
             <IndentIncrease className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Increase indent</TooltipContent>
       </Tooltip>
-      {/* More Options */}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 flex-shrink-0">
@@ -408,7 +336,11 @@ function ToolbarPlugin({
   )
 }
 
+/* ---------- Main Component ----------
+   Full replacement of the WriteMessage component.
+--------------------------------------*/
 export default function WriteMessage({ isOpen, onToggle }) {
+  // Email fields & UI state
   const [to, setTo] = useState("")
   const [subject, setSubject] = useState("")
   const [isMaximized, setIsMaximized] = useState(false)
@@ -421,93 +353,26 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const [showFormatting, setShowFormatting] = useState(false)
   const [fontFamily, setFontFamily] = useState('Arial')
   const [fontSize, setFontSize] = useState('14px')
-  const [editorState, setEditorState] = useState(null)
+  const [editorStateSnapshot, setEditorStateSnapshot] = useState(null) // optional snapshot storage
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+
+  // The actual Lexical editor instance reference
+  const [editorInstance, setEditorInstance] = useState(null)
 
   const initialConfig = useMemo(() => ({
     namespace: 'EmailEditor',
     theme: editorTheme,
-    onError: (error) => console.error(error),
+    onError: (error) => console.error('Lexical error:', error),
     nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
   }), [])
 
-  // Replace the handleSend function (around line 432)
-  const handleSend = useCallback(() => {
-    if (!editorState) {
-      console.warn('No content to send')
-      return
-    }
-
-    let emailContent = ''
-
-    editorState.read(() => {
-      const root = $getRoot()
-
-      // Get HTML content for rich formatting
-      try {
-        emailContent = $generateHtmlFromNodes(editorState, null)
-      } catch (error) {
-        // Fallback to plain text if HTML generation fails
-        emailContent = root.getTextContent()
-      }
-    })
-
-    // Validate required fields
-    if (!to.trim()) {
-      alert('Please enter a recipient email address')
-      return
-    }
-
-    if (!subject.trim()) {
-      alert('Please enter a subject')
-      return
-    }
-
-    if (!emailContent.trim()) {
-      alert('Please write a message')
-      return
-    }
-
-    // Email data object
-    const emailData = {
-      to: to.trim(),
-      subject: subject.trim(),
-      message: emailContent,
-      cc: cc.trim() || null,
-      bcc: bcc.trim() || null,
-      attachments: attachments || [],
-      timestamp: new Date().toISOString(),
-      format: 'html' // Since we're using HTML content
-    }
-
-    console.log('Sending email:', emailData)
-
-    // Here you would integrate with your email sending service
-    // Examples:
-
-    // Option 1: Send via API
-    sendEmailViaAPI(emailData)
-
-    // Option 2: Send via backend endpoint
-    // fetch('/api/send-email', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(emailData)
-    // })
-
-    // Show success message
-    alert('Email sent successfully!')
-
-    // Clear form after sending
-    resetForm()
-
-  }, [editorState, to, subject, cc, bcc, attachments])
-
-  // Add these helper functions after handleSend
+  /* ---------- Send email API helper ----------
+     Keep your existing /api/send-email endpoint.
+     This function POSTs JSON and handles responses.
+  ------------------------------------------*/
   const sendEmailViaAPI = useCallback(async (emailData) => {
     try {
-      // Replace with your actual email service (e.g., SendGrid, Mailgun, etc.)
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
@@ -516,12 +381,16 @@ export default function WriteMessage({ isOpen, onToggle }) {
         body: JSON.stringify(emailData)
       })
 
+      const result = await response.json().catch(() => ({}))
+
       if (!response.ok) {
-        throw new Error(`Email sending failed: ${response.statusText}`)
+        throw new Error(result.error || `Email sending failed: ${response.statusText}`)
       }
 
-      const result = await response.json()
       console.log('Email sent successfully:', result)
+      alert('Email sent successfully!')
+      resetForm()
+      onToggle?.()
       return result
 
     } catch (error) {
@@ -529,20 +398,32 @@ export default function WriteMessage({ isOpen, onToggle }) {
       alert(`Failed to send email: ${error.message}`)
       throw error
     }
-  }, [])
+  }, [onToggle])
 
+  // Reset all fields and editor state
   const resetForm = useCallback(() => {
     setTo('')
     setSubject('')
     setCc('')
     setBcc('')
     setAttachments([])
-    setEditorState(null)
-
-    // Clear the editor content
-    // This will reset the editor to initial state
+    setEditorStateSnapshot(null)
     setShowFormatting(false)
-  }, [])
+
+    // Reset Lexical editor content if instance available
+    if (editorInstance) {
+      try {
+        editorInstance.update(() => {
+          const root = $getRoot()
+          root.clear() // clear content
+        })
+      } catch (err) {
+        // best-effort
+        console.warn('Failed to clear editor content:', err)
+      }
+    }
+  }, [editorInstance])
+
   const toggleMinimized = useCallback(() => {
     setIsMinimized(prev => !prev)
     setIsMaximized(false)
@@ -557,11 +438,97 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const toggleBCC = useCallback(() => setShowBCC(prev => !prev), [])
   const toggleFormatting = useCallback(() => setShowFormatting(prev => !prev), [])
 
+  /* ---------- handleSend ----------
+     Generate HTML via editor.update() — this is the correct, safe way.
+     If HTML generation fails we fallback to plain text via read().
+  ----------------------------------*/
+  const handleSend = useCallback(async () => {
+    // basic validation
+    if (!editorInstance) {
+      alert('Editor not ready')
+      return
+    }
+
+    if (!to.trim()) {
+      alert('Please enter a recipient email address')
+      return
+    }
+
+    if (!subject.trim()) {
+      alert('Please enter a subject')
+      return
+    }
+
+    let emailContent = ''
+
+    try {
+      // Use editor.update so that $-helpers can be used safely.
+      editorInstance.update(() => {
+        // $generateHtmlFromNodes accepts an EditorState or node list.
+        // Passing the editor instance here has worked reliably in prior Lexical usage
+        // — this is the same pattern used in the patch above.
+        try {
+          const html = $generateHtmlFromNodes(editorInstance, null)
+          emailContent = html
+        } catch (inner) {
+          // If html generation inside update() throws, swallow and fallback below
+          console.warn('Inner HTML generation failed inside update():', inner)
+          emailContent = ''
+        }
+      })
+    } catch (error) {
+      console.error('Error generating HTML (update):', error)
+    }
+
+    // Fallback: if HTML empty, read plain text (safe read)
+    if (!emailContent || emailContent.trim() === '') {
+      try {
+        // getEditorState().read uses a read-only transform
+        const editorState = editorInstance.getEditorState && editorInstance.getEditorState()
+        if (editorState && editorState.read) {
+          editorState.read(() => {
+            const root = $getRoot()
+            emailContent = root.getTextContent()
+          })
+        } else {
+          // as a final fallback, attempt a small read via update (best-effort)
+          editorInstance.update(() => {
+            const root = $getRoot()
+            emailContent = root.getTextContent()
+          })
+        }
+      } catch (err) {
+        console.error('Fallback plain text read failed:', err)
+      }
+    }
+
+    if (!emailContent || emailContent.trim() === '') {
+      alert('Please write a message')
+      return
+    }
+
+    const emailData = {
+      to: to.trim(),
+      subject: subject.trim(),
+      message: emailContent,
+      cc: cc.trim() || null,
+      bcc: bcc.trim() || null,
+    }
+
+    console.log('Sending email:', emailData)
+
+    try {
+      await sendEmailViaAPI(emailData)
+    } catch (error) {
+      console.error('Error sending email:', error)
+    }
+
+  }, [editorInstance, to, subject, cc, bcc, sendEmailViaAPI])
+
   if (!isOpen) return null
 
   return (
     <>
-      {/* Backdrop for maximized state */}
       {isMaximized && (
         <div
           className="fixed inset-0 bg-black/20 z-40"
@@ -586,28 +553,13 @@ export default function WriteMessage({ isOpen, onToggle }) {
             <h2 className="text-lg font-semibold">New Message</h2>
           </div>
           <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-gray-100"
-              onClick={toggleMinimized}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={toggleMinimized}>
               <Minus className="h-5 w-5 text-gray-600" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-gray-100"
-              onClick={toggleMaximized}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={toggleMaximized}>
               <Maximize2 className="h-4 w-4 text-gray-600" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-gray-100"
-              onClick={onToggle}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={onToggle}>
               <X className="h-5 w-5 text-gray-600" />
             </Button>
           </div>
@@ -615,7 +567,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
 
         {!isMinimized && (
           <>
-            {/* To Field */}
+            {/* To field + CC/BCC toggles */}
             <div className="flex items-center gap-2 px-4">
               <span className="text-sm font-medium text-gray-700 w-14">To</span>
               <Input
@@ -626,26 +578,12 @@ export default function WriteMessage({ isOpen, onToggle }) {
                 className="flex-1 p-2 h-auto text-sm placeholder:text-gray-400 placeholder:p-2 border-b-2"
               />
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-3 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3"
-                  onClick={toggleCC}
-                >
-                  CC
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3"
-                  onClick={toggleBCC}
-                >
-                  BCC
-                </Button>
+                <Button variant="ghost" size="sm" className="h-7 px-3 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3" onClick={toggleCC}>CC</Button>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-600 hover:bg-gray-100 border py-5 border-b-3" onClick={toggleBCC}>BCC</Button>
               </div>
             </div>
 
-            {/* CC Field */}
+            {/* CC */}
             {showCC && (
               <div className="flex items-center gap-3 px-4 pt-3">
                 <span className="text-sm font-medium text-gray-700 w-13">CC</span>
@@ -659,7 +597,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               </div>
             )}
 
-            {/* BCC Field */}
+            {/* BCC */}
             {showBCC && (
               <div className="flex items-center gap-3 px-4 pt-3">
                 <span className="text-sm font-medium text-gray-700 w-13">BCC</span>
@@ -673,7 +611,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               </div>
             )}
 
-            {/* Subject Field */}
+            {/* Subject */}
             <div className="flex items-center gap-3 px-4 py-3">
               <span className="text-sm font-medium text-gray-700 w-13">Subject</span>
               <Input
@@ -687,9 +625,12 @@ export default function WriteMessage({ isOpen, onToggle }) {
 
             <Separator />
 
-            {/* Lexical Editor */}
+            {/* Editor */}
             <div className="flex-1 overflow-y-auto p-4 relative">
               <LexicalComposer initialConfig={initialConfig}>
+                {/* get editor instance into state */}
+                <EditorRefPlugin setEditor={setEditorInstance} />
+
                 <div className="relative">
                   <RichTextPlugin
                     contentEditable={
@@ -707,11 +648,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
                   />
                   <HistoryPlugin />
                   <ListPlugin />
-                  <OnChangePlugin
-                    onChange={(editorState) => {
-                      setEditorState(editorState)
-                    }}
-                  />
+                  <OnChangePlugin onChange={(editorState) => setEditorStateSnapshot(editorState)} />
                   {showFormatting && (
                     <div className="mt-4">
                       <ToolbarPlugin
@@ -730,7 +667,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               </LexicalComposer>
             </div>
 
-            {/* Writing Assistant */}
+            {/* Writing assistant button (UI placeholder) */}
             <div className="px-4 pb-2">
               <Button
                 variant="ghost"
@@ -742,14 +679,11 @@ export default function WriteMessage({ isOpen, onToggle }) {
               </Button>
             </div>
 
-            {/* Footer */}
+            {/* Footer with send */}
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-row gap-2">
                 <ButtonGroup>
-                  <Button
-                    onClick={handleSend}
-                    className="gap-2 bg-indigo-600 hover:bg-indigo-500 border-r-1 border-indigo-800"
-                  >
+                  <Button onClick={handleSend} className="gap-2 bg-indigo-600 hover:bg-indigo-500 border-r-1 border-indigo-800">
                     Send
                   </Button>
                   <DropdownMenu>
@@ -768,21 +702,17 @@ export default function WriteMessage({ isOpen, onToggle }) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </ButtonGroup>
+
                 <div className="flex items-center">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant='ghost'
-                        className="font-semibold text-base p-1"
-                        onClick={toggleFormatting}
-                      >
+                      <Button variant='ghost' className="font-semibold text-base p-1" onClick={toggleFormatting}>
                         Aa
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      Text Formatting
-                    </TooltipContent>
+                    <TooltipContent>Text Formatting</TooltipContent>
                   </Tooltip>
+
                   {EditingOptions.map(({ Icon, hovercontent }, index) => (
                     <Tooltip key={index}>
                       <TooltipTrigger asChild>
@@ -790,13 +720,12 @@ export default function WriteMessage({ isOpen, onToggle }) {
                           <Icon className="h-5 w-5 text-gray-600" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {hovercontent}
-                      </TooltipContent>
+                      <TooltipContent>{hovercontent}</TooltipContent>
                     </Tooltip>
                   ))}
                 </div>
               </div>
+
               <div className="flex items-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -804,19 +733,16 @@ export default function WriteMessage({ isOpen, onToggle }) {
                       <EllipsisVertical className="h-5 w-5 text-gray-600" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    More options
-                  </TooltipContent>
+                  <TooltipContent>More options</TooltipContent>
                 </Tooltip>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={resetForm}>
                       <Trash2 className="h-5 w-5 text-gray-600" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    Discard draft
-                  </TooltipContent>
+                  <TooltipContent>Discard draft</TooltipContent>
                 </Tooltip>
               </div>
             </div>
