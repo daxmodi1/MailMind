@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@langchain/core": "^1.0.5",
+    "@langchain/groq": "^1.0.1",
     "@lexical/clipboard": "^0.36.2",
     "@lexical/history": "^0.36.2",
     "@lexical/link": "^0.36.2",
@@ -36,6 +38,7 @@
     "emoji-picker-react": "^4.15.1",
     "framer-motion": "^12.23.12",
     "googleapis": "^159.0.0",
+    "langchain": "^1.0.5",
     "lexical": "^0.36.2",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.12",

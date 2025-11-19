@@ -17,9 +17,10 @@ import {
   Tooltip, TooltipContent, TooltipTrigger, Separator,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "./import"
-
 import { EditingOptions, FONT_FAMILIES, FONT_SIZES, editorTheme } from "./Editing-options"
 import { EmojiPickerComponent } from "./EmojiPickerPlugin"
+import { DraftSaveDialog } from "./DraftSaveDialog"
+import { HelpMeWriteDialog } from "./HelpMeWriteDialog"
 /* ---------- EditorRefPlugin ----------
    Captures the Lexical editor instance and
    exposes it to the parent via setEditor.
@@ -244,6 +245,13 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const [isConfidential, setIsConfidential] = useState(false)
   const [confidentialData, setConfidentialData] = useState(null)
 
+  // Draft save confirmation state
+  const [showDraftDialog, setShowDraftDialog] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null)
+
+  // Help me write state
+  const [showHelpDialog, setShowHelpDialog] = useState(false)
+
   const handleConfidentialToggle = useCallback((data) => {
     setConfidentialData(data)
     if (data) {
@@ -318,6 +326,152 @@ export default function WriteMessage({ isOpen, onToggle }) {
       }
     }
   }, [editorInstance])
+
+  /* --------- Draft Save Functionality ---------
+     Saves and loads drafts from localStorage
+  ----------------------------------------*/
+
+  const saveDraft = useCallback(async () => {
+    if (!editorInstance) {
+      console.error('Editor not initialized')
+      return null
+    }
+
+    try {
+      let htmlContent = ''
+      await editorInstance.update(() => {
+        htmlContent = $generateHtmlFromNodes(editorInstance, null)
+      })
+
+      console.log('=== Saving Draft ===')
+      console.log('To:', to || '(empty)')
+      console.log('Subject:', subject || '(empty)')
+      console.log('Content length:', htmlContent?.length || 0)
+      console.log('CC:', cc || '(empty)')
+      console.log('BCC:', bcc || '(empty)')
+      console.log('Attachments:', attachments.length)
+
+      // Drafts can be completely empty - no validation required
+      // User can save whenever they want to preserve their work
+
+      const draft = {
+        to,
+        subject,
+        cc,
+        bcc,
+        content: htmlContent,
+        attachments: attachments.map(file => ({
+          name: file.name,
+          size: file.size,
+          type: file.type
+        })),
+        isConfidential,
+        confidentialData,
+        savedAt: new Date().toISOString()
+      }
+
+      // Save to localStorage
+      localStorage.setItem('emailDraft', JSON.stringify(draft))
+      console.log('✓ Draft saved to localStorage')
+
+      // Also save to backend API
+      try {
+        const formData = new FormData()
+        formData.append('to', to.trim())
+        formData.append('subject', subject.trim())
+        formData.append('message', htmlContent)
+        formData.append('cc', cc?.trim() || '')
+        formData.append('bcc', bcc?.trim() || '')
+        formData.append('isDraft', 'true')
+        
+        if (isConfidential && confidentialData) {
+          formData.append('confidential', JSON.stringify(confidentialData))
+        }
+
+        // Add attachments to FormData
+        attachments.forEach((file) => {
+          formData.append('attachments', file)
+        })
+
+        console.log('Sending draft to backend API...')
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          body: formData
+        })
+
+        const result = await response.json()
+
+        if (response.ok) {
+          console.log('✓ Draft saved to backend:', result.draftId)
+          return { ...draft, draftId: result.draftId }
+        } else {
+          console.warn('⚠️ Backend draft save failed:', result.error)
+          console.warn('Response:', result)
+          // Still return draft even if backend fails
+          return draft
+        }
+      } catch (backendError) {
+        console.warn('⚠️ Error saving draft to backend:', backendError)
+        // Still return draft even if backend fails
+        return draft
+      }
+    } catch (error) {
+      console.error('❌ Error saving draft:', error)
+      return null
+    }
+  }, [to, subject, cc, bcc, attachments, isConfidential, confidentialData, editorInstance])
+
+  const loadDraft = useCallback(() => {
+    try {
+      const draft = localStorage.getItem('emailDraft')
+      if (draft) {
+        return JSON.parse(draft)
+      }
+      return null
+    } catch (error) {
+      console.error('Error loading draft:', error)
+      return null
+    }
+  }, [])
+
+  const hasDraftContent = useCallback(() => {
+    return !!(to.trim() || subject.trim() || attachments.length > 0 || editorStateSnapshot)
+  }, [to, subject, attachments, editorStateSnapshot])
+
+  const handleCloseWithConfirmation = useCallback((action) => {
+    if (hasDraftContent()) {
+      setPendingAction(action)
+      setShowDraftDialog(true)
+    } else {
+      // No content, just close
+      if (action === 'close') {
+        onToggle?.()
+      }
+    }
+  }, [hasDraftContent, onToggle])
+
+  const handleSaveDraft = useCallback(async () => {
+    const savedDraft = await saveDraft()
+    if (savedDraft) {
+      alert('Draft saved successfully!')
+      setShowDraftDialog(false)
+      resetForm()
+      if (pendingAction === 'close') {
+        onToggle?.()
+      }
+    } else {
+      alert('Failed to save draft. Please try again.')
+    }
+  }, [saveDraft, resetForm, pendingAction, onToggle])
+
+  const handleDiscardDraft = useCallback(() => {
+    setShowDraftDialog(false)
+    resetForm()
+    if (pendingAction === 'close') {
+      onToggle?.()
+    }
+  }, [resetForm, pendingAction, onToggle])
+
   const sendEmailViaAPI = useCallback(async (emailData) => {
     try {
       const response = await fetch('/api/send-email', {
@@ -534,7 +688,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={toggleMaximized}>
               <Maximize2 className="h-4 w-4 text-gray-600" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={onToggle}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100" onClick={() => handleCloseWithConfirmation('close')}>
               <X className="h-5 w-5 text-gray-600" />
             </Button>
           </div>
@@ -778,8 +932,8 @@ export default function WriteMessage({ isOpen, onToggle }) {
                                 handleAttachClick()
                                 break
                               case 'help':
-                                console.log('Help me write clicked')
-                                // Add your help write functionality here
+                                console.log('Opening help me write dialog')
+                                setShowHelpDialog(true)
                                 break
                               case 'link':
                                 console.log('Insert link clicked')
@@ -827,12 +981,26 @@ export default function WriteMessage({ isOpen, onToggle }) {
                       <Trash2 className="h-5 w-5 text-gray-600" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Discard draft</TooltipContent>
                 </Tooltip>
               </div>
             </div>
           </>
         )}
+
+        {/* Draft Save Confirmation Dialog */}
+        <DraftSaveDialog 
+          isOpen={showDraftDialog} 
+          onOpenChange={setShowDraftDialog}
+          onSaveDraft={handleSaveDraft}
+          onDiscardDraft={handleDiscardDraft}
+        />
+
+        {/* Help Me Write Dialog */}
+        <HelpMeWriteDialog
+          isOpen={showHelpDialog}
+          onOpenChange={setShowHelpDialog}
+          editorInstance={editorInstance}
+        />
       </div>
     </>
   )

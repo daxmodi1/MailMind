@@ -12,7 +12,7 @@ export function ConfidentialModeComponent({ onToggle }) {
   const [showDialog, setShowDialog] = useState(false)
   const [expiryOption, setExpiryOption] = useState('1week')
   const [passcodeOption, setPasscodeOption] = useState('none')
-  const [confidentialData, setConfidentialData] = useState(null)
+  const [confidentialData, setConfidentialData]  = useState(null)
 
   // Calculate expiry date
   const getExpiryDate = (option) => {

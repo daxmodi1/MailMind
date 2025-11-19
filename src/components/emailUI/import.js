@@ -23,7 +23,9 @@ import {
   CAN_REDO_COMMAND,
   COMMAND_PRIORITY_LOW,
   INDENT_CONTENT_COMMAND,
-  OUTDENT_CONTENT_COMMAND
+  OUTDENT_CONTENT_COMMAND,
+  $createParagraphNode,
+  $createTextNode
 } from 'lexical'
 
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
@@ -44,7 +46,7 @@ import {
   Button, Input, DropdownMenu, DropdownMenuContent, DropdownMenuGroup,
   DropdownMenuItem, DropdownMenuTrigger, ButtonGroup, Tooltip,
   TooltipContent, TooltipTrigger, Separator, Select, SelectContent,
-  SelectItem, SelectTrigger, SelectValue
+  SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from "@/lib/shadcnComp"
 
 export {useState, useCallback, useMemo, useEffect, useRef, cn,
@@ -55,12 +57,12 @@ export {useState, useCallback, useMemo, useEffect, useRef, cn,
   CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,
   INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND, HeadingNode, QuoteNode,
   ListItemNode, ListNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND,
-  LinkNode, Sparkles, Maximize2, Minus, X, Link2, Smile, Trash2, EllipsisVertical,
+  LinkNode, $createParagraphNode, $createTextNode, Sparkles, Maximize2, Minus, X, Link2, Smile, Trash2, EllipsisVertical,
   Bold, Italic, UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, MdScheduleSend, MdAddToDrive, MdOutlineImage, MdLockClock, FaCaretDown,
   FaPenAlt, FaWandMagicSparkles, BsPaperclip, Undo2, Redo2,
-  IndentDecrease, IndentIncrease, Strikethrough,    Button, Input, DropdownMenu, DropdownMenuContent,
+  IndentDecrease, IndentIncrease, Strikethrough, Button, Input, DropdownMenu, DropdownMenuContent,
   DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger, ButtonGroup,
   Tooltip, TooltipContent, TooltipTrigger, Separator,
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 }
