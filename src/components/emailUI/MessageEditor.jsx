@@ -1,6 +1,5 @@
 'use client'
 import { LexicalComposer, RichTextPlugin, ContentEditable, HistoryPlugin, ListPlugin, LinkPlugin, OnChangePlugin, LexicalErrorBoundary } from "./import"
-import { editorTheme } from "./Editing-options"
 import { EditorRefPlugin } from "./EditorRefPlugin"
 import { ToolbarPlugin } from "./ToolbarPlugin"
 
@@ -44,27 +43,32 @@ export function MessageEditor({
         </div>
       )}
 
-      <div className="relative">
-        <RichTextPlugin
-          contentEditable={
-            <ContentEditable
-              className="min-h-[200px] w-full text-base leading-relaxed focus:outline-none"
-              style={{ fontFamily, fontSize }}
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="relative">
+            <RichTextPlugin
+              contentEditable={
+                <ContentEditable
+                  className="min-h-[200px] w-full text-base leading-relaxed focus:outline-none"
+                  style={{ fontFamily, fontSize }}
+                />
+              }
+              placeholder={
+                <div className="absolute top-0 left-0 text-gray-400 pointer-events-none">
+                  Write your message...
+                </div>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
             />
-          }
-          placeholder={
-            <div className="absolute top-0 left-0 text-gray-400 pointer-events-none">
-              Write your message...
-            </div>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        <HistoryPlugin />
-        <ListPlugin />
-        <LinkPlugin />
-        <OnChangePlugin onChange={(editorState) => setEditorStateSnapshot(editorState)} />
+            <HistoryPlugin />
+            <ListPlugin />
+            <LinkPlugin />
+            <OnChangePlugin onChange={(editorState) => setEditorStateSnapshot(editorState)} />
+          </div>
+        </div>
+        
         {showFormatting && (
-          <div className="mt-4">
+          <div className="border-t border-gray-200 p-2">
             <ToolbarPlugin
               fontFamily={fontFamily}
               fontSize={fontSize}

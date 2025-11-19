@@ -3,13 +3,12 @@ import { useState, useCallback, useMemo, useEffect, useRef, cn, HeadingNode, Quo
 import { editorTheme } from "./Editing-options"
 import { DraftSaveDialog } from "./DraftSaveDialog"
 import { HelpMeWriteDialog } from "./HelpMeWriteDialog"
-import { EditorRefPlugin } from "./EditorRefPlugin"
-import { ToolbarPlugin } from "./ToolbarPlugin"
 import { MessageHeader } from "./MessageHeader"
 import { MessageEditor } from "./MessageEditor"
 import { MessageFooter } from "./MessageFooter"
 import { useDraftFunctionality, useEmailSending } from "./useEmailActions"
 import { validateAndPrepareEmail } from "./emailUtils"
+import { useToggleHandlers, useAttachmentHandlers, useDraftHandlers, useSendHandlers, useConfirmationHandlers } from "./useMessageHandlers"
 /* ---------- EditorRefPlugin ----------
    Captures the Lexical editor instance and
    exposes it to the parent via setEditor.
@@ -121,98 +120,28 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const { saveDraft } = useDraftFunctionality(editorInstance, to, subject, cc, bcc, attachments, isConfidential, confidentialData)
   const { sendEmailViaAPI } = useEmailSending(onToggle, resetForm)
 
-  const toggleMinimized = useCallback(() => {
-    setIsMinimized(prev => !prev)
-    setIsMaximized(false)
-  }, [])
+  // Toggle handlers
+  const { toggleMinimized, toggleMaximized, toggleCC, toggleBCC, toggleFormatting } = useToggleHandlers(
+    setIsMinimized, setIsMaximized, setShowCC, setShowBCC, setShowFormatting
+  )
 
-  const toggleMaximized = useCallback(() => {
-    setIsMaximized(prev => !prev)
-    setIsMinimized(false)
-  }, [])
+  // Attachment handlers
+  const { handleAttachClick, handleFileSelect, removeAttachment } = useAttachmentHandlers(fileInputRef, setAttachments)
 
-  const toggleCC = useCallback(() => setShowCC(prev => !prev), [])
-  const toggleBCC = useCallback(() => setShowBCC(prev => !prev), [])
-  const toggleFormatting = useCallback(() => setShowFormatting(prev => !prev), [])
+  // Send handler
+  const { handleSend } = useSendHandlers(editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI, validateAndPrepareEmail)
 
-  const handleAttachClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
-
-  const handleFileSelect = useCallback((e) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setAttachments(prev => [...prev, ...files])
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
-
-  const removeAttachment = useCallback((index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index))
-  }, [])
-
-  const handleSend = useCallback(async () => {
-    try {
-      if (!editorInstance) {
-        alert('Editor not ready')
-        return
-      }
-
-      const emailData = await validateAndPrepareEmail(
-        editorInstance,
-        to,
-        subject,
-        cc,
-        bcc,
-        attachments,
-        confidentialData
-      )
-
-      await sendEmailViaAPI(emailData)
-    } catch (error) {
-      alert(error.message)
-      console.error('Error sending email:', error)
-    }
-  }, [editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI])
-
+  // Draft confirmation helpers
   const hasDraftContent = useCallback(() => {
     return !!(to.trim() || subject.trim() || attachments.length > 0 || editorStateSnapshot)
   }, [to, subject, attachments, editorStateSnapshot])
 
-  const handleCloseWithConfirmation = useCallback((action) => {
-    if (hasDraftContent()) {
-      setPendingAction(action)
-      setShowDraftDialog(true)
-    } else {
-      if (action === 'close') {
-        onToggle?.()
-      }
-    }
-  }, [hasDraftContent, onToggle])
+  const { handleCloseWithConfirmation } = useConfirmationHandlers(hasDraftContent, onToggle, setShowDraftDialog, setPendingAction)
 
-  const handleSaveDraft = useCallback(async () => {
-    const savedDraft = await saveDraft()
-    if (savedDraft) {
-      alert('Draft saved successfully!')
-      setShowDraftDialog(false)
-      resetForm()
-      if (pendingAction === 'close') {
-        onToggle?.()
-      }
-    } else {
-      alert('Failed to save draft. Please try again.')
-    }
-  }, [saveDraft, resetForm, pendingAction, onToggle])
-
-  const handleDiscardDraft = useCallback(() => {
-    setShowDraftDialog(false)
-    resetForm()
-    if (pendingAction === 'close') {
-      onToggle?.()
-    }
-  }, [resetForm, pendingAction, onToggle])
+  // Draft handlers
+  const { handleSaveDraft, handleDiscardDraft } = useDraftHandlers(
+    saveDraft, resetForm, setShowDraftDialog, setShowHelpDialog, setPendingAction, onToggle
+  )
   if (!isOpen) return null
 
   return (
@@ -242,6 +171,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
               : "bottom-0 right-6 w-full max-w-xl h-[700px] rounded-t-lg"
         )}
       >
+        {/*To, CC, BCC, Subject */}
         <MessageHeader
           onMinimize={toggleMinimized}
           onMaximize={toggleMaximized}
@@ -260,6 +190,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
           toggleBCC={toggleBCC}
         />
 
+        {/* Rich Text Editor */}
         {!isMinimized && (
           <>
             <div className="flex-1 overflow-y-auto p-4 relative">
@@ -281,16 +212,6 @@ export default function WriteMessage({ isOpen, onToggle }) {
               />
             </div>
 
-            <div className="px-4 pb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="py-5 rounded-full border border-indigo-200 bg-blue-50 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8"
-              >
-                <Sparkles stroke="blue" width={20} height={20} />
-                <span className="text-sm font-semibold">Writing Assistant</span>
-              </Button>
-            </div>
 
             <MessageFooter
               editorInstance={editorInstance}

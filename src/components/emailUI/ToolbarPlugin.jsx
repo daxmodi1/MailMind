@@ -1,15 +1,14 @@
 'use client'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   useLexicalComposerContext,
-  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, UNDO_COMMAND, REDO_COMMAND,
+  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND,
   CAN_UNDO_COMMAND, CAN_REDO_COMMAND, COMMAND_PRIORITY_LOW,
-  INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND,
   Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Tooltip, TooltipContent, TooltipTrigger,
   Bold, Italic, UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
-  List, ListOrdered, EllipsisVertical, Strikethrough
+  List, ListOrdered, Strikethrough
 } from "./import"
 import { FONT_FAMILIES, FONT_SIZES } from "./Editing-options"
 
@@ -24,6 +23,56 @@ export function ToolbarPlugin({
   onCanRedoChange
 }) {
   const [editor] = useLexicalComposerContext()
+  const [isBold, setIsBold] = useState(false)
+  const [isItalic, setIsItalic] = useState(false)
+  const [isUnderline, setIsUnderline] = useState(false)
+  const [isStrikethrough, setIsStrikethrough] = useState(false)
+  const [alignmentLeft, setAlignmentLeft] = useState(false)
+  const [alignmentCenter, setAlignmentCenter] = useState(false)
+  const [alignmentRight, setAlignmentRight] = useState(false)
+  const [isBulletList, setIsBulletList] = useState(false)
+  const [isOrderedList, setIsOrderedList] = useState(false)
+
+  // Update format states on selection change
+  useEffect(() => {
+    if (!editor) return
+    
+    const updateFormats = () => {
+      editor.read(() => {
+        const selection = editor._editorState._selection
+        if (selection) {
+          setIsBold(selection.hasFormat('bold'))
+          setIsItalic(selection.hasFormat('italic'))
+          setIsUnderline(selection.hasFormat('underline'))
+          setIsStrikethrough(selection.hasFormat('strikethrough'))
+        }
+      })
+    }
+
+    // Listen for selection changes
+    const unsubscribe = editor.registerUpdateListener(({ editorState }) => {
+      editorState.read(() => {
+        const selection = editorState._selection
+        if (selection) {
+          setIsBold(selection.hasFormat('bold'))
+          setIsItalic(selection.hasFormat('italic'))
+          setIsUnderline(selection.hasFormat('underline'))
+          setIsStrikethrough(selection.hasFormat('strikethrough'))
+          
+          // Check alignment
+          setAlignmentLeft(selection.hasFormat('left'))
+          setAlignmentCenter(selection.hasFormat('center'))
+          setAlignmentRight(selection.hasFormat('right'))
+          
+          // Check lists
+          setIsBulletList(selection.hasFormat('bullet'))
+          setIsOrderedList(selection.hasFormat('number'))
+        }
+      })
+    })
+
+    return () => unsubscribe()
+  }, [editor])
 
   useEffect(() => {
     if (!editor || !onCanUndoChange) return
@@ -62,8 +111,7 @@ export function ToolbarPlugin({
   const insertOrderedList = useCallback(() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined), [editor])
 
   return (
-    <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 gap-0.5 flex-wrap justify-start">
-      <div className="w-px h-6 bg-gray-300 mx-0.5" />
+    <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 gap-1 justify-start">
 
       {/* Font Family */}
       <Select value={fontFamily} onValueChange={setFont}>
@@ -78,9 +126,8 @@ export function ToolbarPlugin({
           ))}
         </SelectContent>
       </Select>
-
-      <div className="w-px h-6 bg-gray-300 mx-0.5" />
-
+      
+      {/* Font Size */}
       <Select value={fontSize} onValueChange={setTextSize}>
         <SelectTrigger className="h-8 w-[80px] border-0 bg-transparent hover:bg-gray-200 text-xs">
           <SelectValue />
@@ -95,11 +142,16 @@ export function ToolbarPlugin({
       </Select>
 
       <div className="w-px h-6 bg-gray-300 mx-0.5" />
-
+      {/* Bold,italic, underline */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatBold}>
-            <Bold className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${isBold ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatBold}
+          >
+            <Bold className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Bold</TooltipContent>
@@ -107,8 +159,13 @@ export function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatItalic}>
-            <Italic className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${isItalic ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatItalic}
+          >
+            <Italic className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Italic</TooltipContent>
@@ -116,8 +173,13 @@ export function ToolbarPlugin({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatUnderline}>
-            <UnderlineIcon className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${isUnderline ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatUnderline}
+          >
+            <UnderlineIcon className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Underline</TooltipContent>
@@ -125,35 +187,50 @@ export function ToolbarPlugin({
 
       <div className="w-px h-6 bg-gray-300 mx-0.5" />
 
+      {/* Alignment (left,right,center) */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignLeft}>
-            <AlignLeft className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${alignmentLeft ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatAlignLeft}
+          >
+            <AlignLeft className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align left</TooltipContent>
       </Tooltip>
-
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignCenter}>
-            <AlignCenter className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${alignmentCenter ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatAlignCenter}
+          >
+            <AlignCenter className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align center</TooltipContent>
       </Tooltip>
-
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignRight}>
-            <AlignRight className="h-4 w-4 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-8 w-8 ${alignmentRight ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+            onClick={formatAlignRight}
+          >
+            <AlignRight className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align right</TooltipContent>
       </Tooltip>
 
       <div className="w-px h-6 bg-gray-300 mx-0.5" />
-
+      
+      {/* Lists (bulleted, numbered) */}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={insertBulletList}>
@@ -162,7 +239,6 @@ export function ToolbarPlugin({
         </TooltipTrigger>
         <TooltipContent>Bulleted list</TooltipContent>
       </Tooltip>
-
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={insertOrderedList}>
@@ -172,14 +248,17 @@ export function ToolbarPlugin({
         <TooltipContent>Numbered list</TooltipContent>
       </Tooltip>
 
+      {/* strikethrough */}
       <div className="flex items-center">
-        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200">
-          <EllipsisVertical className="h-4 w-4 text-gray-600" />
-        </Button>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200">
-              <Strikethrough className="h-4 w-4 text-gray-600" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={`h-8 w-8 ${isStrikethrough ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
+              onClick={formatStrikethrough}
+            >
+              <Strikethrough className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Strikethrough</TooltipContent>
