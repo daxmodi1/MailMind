@@ -27,11 +27,6 @@ export function ToolbarPlugin({
   const [isItalic, setIsItalic] = useState(false)
   const [isUnderline, setIsUnderline] = useState(false)
   const [isStrikethrough, setIsStrikethrough] = useState(false)
-  const [alignmentLeft, setAlignmentLeft] = useState(false)
-  const [alignmentCenter, setAlignmentCenter] = useState(false)
-  const [alignmentRight, setAlignmentRight] = useState(false)
-  const [isBulletList, setIsBulletList] = useState(false)
-  const [isOrderedList, setIsOrderedList] = useState(false)
 
   // Update format states on selection change
   useEffect(() => {
@@ -58,15 +53,6 @@ export function ToolbarPlugin({
           setIsItalic(selection.hasFormat('italic'))
           setIsUnderline(selection.hasFormat('underline'))
           setIsStrikethrough(selection.hasFormat('strikethrough'))
-          
-          // Check alignment
-          setAlignmentLeft(selection.hasFormat('left'))
-          setAlignmentCenter(selection.hasFormat('center'))
-          setAlignmentRight(selection.hasFormat('right'))
-          
-          // Check lists
-          setIsBulletList(selection.hasFormat('bullet'))
-          setIsOrderedList(selection.hasFormat('number'))
         }
       })
     })
@@ -190,39 +176,24 @@ export function ToolbarPlugin({
       {/* Alignment (left,right,center) */}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={`h-8 w-8 ${alignmentLeft ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
-            onClick={formatAlignLeft}
-          >
-            <AlignLeft className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignLeft}>
+            <AlignLeft className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align left</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={`h-8 w-8 ${alignmentCenter ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
-            onClick={formatAlignCenter}
-          >
-            <AlignCenter className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignCenter}>
+            <AlignCenter className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align center</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={`h-8 w-8 ${alignmentRight ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200 text-gray-600'}`}
-            onClick={formatAlignRight}
-          >
-            <AlignRight className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200" onClick={formatAlignRight}>
+            <AlignRight className="h-4 w-4 text-gray-600" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Align right</TooltipContent>

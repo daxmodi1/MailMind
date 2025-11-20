@@ -45,12 +45,12 @@ export function EmojiPickerComponent({ editorInstance }) {
   }, [showEmoji])
 
   return (
-    <div className="relative">
+    <div className="relative font-main">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant='ghost'
-            className="font-semibold text-base p-2"
+            className="font-semibold text-base p-2 font-main"
             onClick={() => setShowEmoji(!showEmoji)}
           >
             <Smile className="h-5 w-5 text-gray-600" />
@@ -63,7 +63,7 @@ export function EmojiPickerComponent({ editorInstance }) {
       {showEmoji && (
         <div
           ref={emojiPickerRef}
-          className="absolute bottom-12 right-0 z-50 shadow-lg rounded-lg border border-gray-200"
+          className="absolute bottom-12 right-0 z-50 shadow-lg rounded-lg font-main"
         >
           <EmojiPickerReact
             onEmojiClick={handleEmojiClick}
