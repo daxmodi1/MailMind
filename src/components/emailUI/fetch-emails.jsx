@@ -80,6 +80,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         console.log(`📡 Fetching from server: ${queryType}`);
         const res = await fetch(`/api/gmail?type=${queryType}`, {
           signal: fetchAbortController.current.signal,
+          cache: 'no-store',
         });
         const data = await res.json();
         
@@ -130,6 +131,37 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     }
   };
 
+  // 🔄 Refresh emails (clear cache and refetch)
+  const handleRefresh = async () => {
+    const queryType = subtype || type;
+    
+    try {
+      setLoading(true);
+      // Clear client cache
+      const emptyMap = new Map();
+      setCachedEmails(queryType, null);
+      
+      console.log(`🔄 Refreshing emails: ${queryType}`);
+      const res = await fetch(`/api/gmail?type=${queryType}`, {
+        // Force bypass cache
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
+      
+      // Cache on client
+      setCachedEmails(queryType, data);
+      setEmails(data);
+      console.log(`✓ Refresh complete`);
+    } catch (err) {
+      setError(err.message);
+      console.error('Refresh error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const displayName = subtype || type;
 
   // 🌀 Loading State
@@ -163,6 +195,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         onMarkUnread={() => markSelectedAsUnread(setEmails)}
         selectedEmails={selectedEmails}
         emails={emails}
+        onRefresh={handleRefresh}
       />
 
       <div className="flex-1 overflow-auto">

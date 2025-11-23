@@ -1,6 +1,6 @@
-// Client-side email cache with 5 minute TTL
+// Client-side email cache with 2 minute TTL
 const clientEmailCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 export function getCachedEmails(type) {
   const cached = clientEmailCache.get(type);
@@ -19,34 +19,6 @@ export function setCachedEmails(type, data) {
   clientEmailCache.set(type, {
     data,
     timestamp: Date.now()
-  });
-}
-
-// Update a specific email in all cached lists
-export function updateEmailInCache(emailId, operation) {
-  // Update in all cached lists
-  clientEmailCache.forEach((cacheEntry) => {
-    if (Array.isArray(cacheEntry.data)) {
-      cacheEntry.data = cacheEntry.data.map(email => {
-        if (email.id !== emailId) return email;
-
-        const labelIds = email.labelIds || [];
-        let newLabelIds = [...labelIds];
-
-        if (operation === 'markRead') {
-          newLabelIds = newLabelIds.filter(label => label !== 'UNREAD');
-        } else if (operation === 'markUnread') {
-          if (!newLabelIds.includes('UNREAD')) {
-            newLabelIds.push('UNREAD');
-          }
-        }
-
-        return {
-          ...email,
-          labelIds: newLabelIds
-        };
-      });
-    }
   });
 }
 

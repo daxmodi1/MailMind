@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { getPrefetchedEmail, updateCachedEmailStatus } from './fetch-emails';
-import { updateEmailInCache } from '@/lib/emailCache';
 
 // Client cache for individual emails
 const emailClientCache = new Map();
@@ -31,7 +30,8 @@ export default function ShowEmailViaID({ page }) {
           console.log(`⚡ Using prefetched email ${id}`);
           setEmail(prefetched);
           setLoading(false);
-          markEmailAsReadAfterLoad(prefetched);
+          // Mark as read AFTER showing the email
+          setTimeout(() => markEmailAsReadAfterLoad(prefetched), 0);
           return;
         }
 
@@ -40,7 +40,8 @@ export default function ShowEmailViaID({ page }) {
           const cached = emailClientCache.get(id);
           setEmail(cached);
           setLoading(false);
-          markEmailAsReadAfterLoad(cached);
+          // Mark as read AFTER showing the email
+          setTimeout(() => markEmailAsReadAfterLoad(cached), 0);
           return;
         }
 
@@ -56,7 +57,8 @@ export default function ShowEmailViaID({ page }) {
         // Cache it
         emailClientCache.set(id, data);
         setEmail(data);
-        markEmailAsReadAfterLoad(data);
+        // Mark as read AFTER showing the email
+        setTimeout(() => markEmailAsReadAfterLoad(data), 0);
       } catch (err) {
         if (err.name !== 'AbortError') {
           setError(err.message);
@@ -97,15 +99,14 @@ export default function ShowEmailViaID({ page }) {
           };
         });
 
-        // Update all cached copies (both detail cache and list caches)
+        // Update all cached copies (detail cache and list caches)
         updateCachedEmailStatus(id, 'markRead');
-        updateEmailInCache(id, 'markRead');
         emailClientCache.set(id, {
           ...emailData,
           labelIds: (emailData.labelIds || []).filter(label => label !== 'UNREAD')
         });
 
-        console.log(`✓ Email marked as read and caches updated`);
+        console.log(`✓ Email marked as read and removed from unread cache`);
       } catch (err) {
         console.error('Failed to mark email as read:', err);
       }

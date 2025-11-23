@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { getCachedSession } from "@/lib/sessionCache";
 import { createGmailClient } from "@/lib/gmailUtils";
 
-// Simple in-memory cache for email metadata (5 minute TTL)
+// Simple in-memory cache for email metadata (2 minute TTL)
 const emailCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 function getCacheKey(userId, type) {
   return `${userId}:${type}`;

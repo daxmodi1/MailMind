@@ -12,9 +12,11 @@ import {
   ChevronRight,
   ChevronDown
 } from 'lucide-react';
+import { Spinner } from '../ui/spinner';
 
 export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDeselectAll, onDelete, onArchive, onMarkRead, onMarkUnread, selectedEmails, emails, onRefresh }) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const allSelected = selectedCount === totalCount && totalCount > 0;
   const someSelected = selectedCount > 0 && selectedCount < totalCount;
   
@@ -164,11 +166,23 @@ export default function EmailNav({ selectedCount, totalCount, onSelectAll, onDes
         {/* Refresh Button - shown when no emails are selected */}
         {selectedCount === 0 && (
           <button
-            className="p-2 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh"
-            onClick={onRefresh}
+            onClick={async () => {
+              setIsRefreshing(true);
+              try {
+                await onRefresh?.();
+              } finally {
+                setIsRefreshing(false);
+              }
+            }}
+            disabled={isRefreshing}
           >
-            <RefreshCw className="w-4 h-4 text-gray-600" />
+            {isRefreshing ? (
+              <Spinner className="size-4" />
+            ) : (
+              <RefreshCw className="w-4 h-4 text-gray-600" />
+            )}
           </button>
         )}
       </div>

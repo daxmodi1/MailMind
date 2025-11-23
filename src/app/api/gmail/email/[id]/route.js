@@ -3,9 +3,9 @@ import { getCachedSession } from "@/lib/sessionCache";
 import { createGmailClient } from "@/lib/gmailUtils";
 import { parseEmailContent } from "@/app/api/gmail/route";
 
-// Cache individual emails (15 minute TTL)
+// Cache individual emails (2 minute TTL)
 const emailCache = new Map();
-const EMAIL_CACHE_TTL = 15 * 60 * 1000;
+const EMAIL_CACHE_TTL = 2 * 60 * 1000;
 
 function getEmailCacheKey(userId, emailId) {
   return `email:${userId}:${emailId}`;
