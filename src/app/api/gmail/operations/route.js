@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getCachedSession } from '@/lib/sessionCache';
 import { createGmailClient } from '@/lib/gmailUtils';
+import { invalidateUserEmailCache } from '../route';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getCachedSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -41,6 +41,13 @@ export async function POST(request) {
         },
         { status: 207 } // Multi-Status
       );
+    }
+
+    // Invalidate email list cache for this user so it refreshes next time
+    const userId = session.user?.id || session.user?.email;
+    if (userId) {
+      invalidateUserEmailCache(userId);
+      console.log(`✓ Cache invalidated for user after ${operation}`);
     }
 
     return NextResponse.json({

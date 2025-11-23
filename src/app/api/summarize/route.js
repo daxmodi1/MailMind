@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[...nextauth]/route"
+import { getCachedSession } from "@/lib/sessionCache"
 import { summarizeChain } from "@/lib/ai/summarize"
 import { NextResponse } from "next/server"
 
 export async function POST(req) {
     try {
         // Check authentication
-        const session = await getServerSession(authOptions)
+        const session = await getCachedSession(req)
         if (!session) {
             return NextResponse.json(
                 { error: "Unauthorized" },

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Ripple } from '@/components/ui/ripple';
+import { useEffect, useState, useRef } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 import EmailNav from './emailNav';
 import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,11 +10,36 @@ import { decodeHtmlEntities, formatDate, extractSenderName } from '@/lib/helprEm
 import { useEmailActions } from '@/lib/useEmailActions';
 import { AutoDeleteBadge } from './warningBadge';
 
+import { getCachedEmails, setCachedEmails } from '@/lib/emailCache';
+
+// Client cache for full email content (prefetched on hover)
+const emailDetailCache = new Map();
+
+// Export cache getter for showEmail.jsx
+export function getPrefetchedEmail(emailId) {
+  return emailDetailCache.get(emailId);
+}
+
+// Export cache updater to sync changes from email detail view back to list
+export function updateCachedEmailStatus(emailId, operation) {
+  const cached = emailDetailCache.get(emailId);
+  if (cached) {
+    if (operation === 'markRead') {
+      cached.labelIds = (cached.labelIds || []).filter(label => label !== 'UNREAD');
+    } else if (operation === 'markUnread') {
+      if (!cached.labelIds?.includes('UNREAD')) {
+        cached.labelIds = [...(cached.labelIds || []), 'UNREAD'];
+      }
+    }
+  }
+}
+
 export default function UnifiedEmailComponent({ type, subtype }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredEmail, setHoveredEmail] = useState(null);
+  const fetchAbortController = useRef(null);
 
   // ✅ Custom hook for all email actions
   const {
@@ -31,27 +56,79 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     markSelectedAsUnread,
   } = useEmailActions(type, subtype);
 
-  // 🔄 Fetch emails
+  // 🔄 Fetch emails with client-side caching
   useEffect(() => {
+    const queryType = subtype || type;
+    
+    // Cancel previous request if still pending
+    if (fetchAbortController.current) {
+      fetchAbortController.current.abort();
+    }
+    fetchAbortController.current = new AbortController();
+
     async function fetchEmails() {
       try {
-        const queryType = subtype || type;
-        const res = await fetch(`/api/gmail?type=${queryType}`);
+        // Check client cache first (instant response)
+        const cachedData = getCachedEmails(queryType);
+        if (cachedData) {
+          console.log(`⚡ Client cache hit for ${queryType}`);
+          setEmails(cachedData);
+          setLoading(false);
+          return;
+        }
+
+        console.log(`📡 Fetching from server: ${queryType}`);
+        const res = await fetch(`/api/gmail?type=${queryType}`, {
+          signal: fetchAbortController.current.signal,
+        });
         const data = await res.json();
+        
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
+        
+        // Cache on client
+        setCachedEmails(queryType, data);
         setEmails(data);
       } catch (err) {
-        setError(err.message);
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
     }
+    
     fetchEmails();
+
+    // Cleanup function to abort request if component unmounts
+    return () => {
+      if (fetchAbortController.current) {
+        fetchAbortController.current.abort();
+      }
+    };
   }, [type, subtype]);
 
   // 🧭 Generate the correct email link
   const getEmailLink = (emailId) =>
     subtype ? `/dashboard/${type}/${subtype}/${emailId}` : `/dashboard/${type}/${emailId}`;
+
+  // 🚀 Prefetch email on hover (loads full content in background)
+  const prefetchEmailOnHover = async (emailId) => {
+    // Skip if already cached
+    if (emailDetailCache.has(emailId)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/gmail/email/${emailId}`);
+      if (res.ok) {
+        const data = await res.json();
+        emailDetailCache.set(emailId, data);
+        console.log(`✨ Prefetched email ${emailId}`);
+      }
+    } catch (err) {
+      console.warn(`Prefetch failed for ${emailId}:`, err);
+    }
+  };
 
   const displayName = subtype || type;
 
@@ -59,7 +136,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Ripple />
+        <Spinner className="size-8" />
       </div>
     );
 
@@ -112,18 +189,15 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                       ? 'bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
                       : 'bg-[#F2F6FC] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1),0_-1px_4px_rgba(0,0,0,0.05)] hover:z-10'
                   )}
-                  onMouseEnter={() => setHoveredEmail(email.id)}
+                  onMouseEnter={() => {
+                    setHoveredEmail(email.id);
+                    prefetchEmailOnHover(email.id);
+                  }}
                   onMouseLeave={() => setHoveredEmail(null)}
                 >
                   <Link
                     href={getEmailLink(email.id)}
                     className="flex items-center px-4 py-2 gap-4"
-                    onClick={(e) => {
-                      const target = e.target;
-                      const isCheckbox = target.closest('[data-checkbox]');
-                      const isActionButton = target.closest('button');
-                      if (!isCheckbox && !isActionButton) markAsRead(email.id, setEmails);
-                    }}
                   >
                     {/* Checkbox */}
                     <div onClick={(e) => toggleEmailSelection(email.id, e)} data-checkbox>

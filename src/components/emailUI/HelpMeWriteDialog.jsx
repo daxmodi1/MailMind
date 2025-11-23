@@ -1,9 +1,11 @@
 'use client'
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, $getRoot, $createParagraphNode, $createTextNode } from "./import"
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { Button, $getRoot, $createParagraphNode, $createTextNode } from "./import"
 import { Loader2 } from 'lucide-react'
 
 export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
+  const { data: session } = useSession()
   const [prompt, setPrompt] = useState('')
   const [generatedEmail, setGeneratedEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,12 +22,20 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
     setError(null)
 
     try {
+      const userName = session?.user?.name || 'Regards'
+      const enhancedPrompt = `Write a short, casual, and natural email. Keep it concise and friendly, like you're texting a friend. Don't be overly formal or lengthy. 
+
+Maximum 2 paragraphs only. If it needs multiple points, combine them naturally in 1-2 paragraphs max. Keep paragraphs very short and punchy.
+Also if there are gaps in information, make do not make assumptions, just keep it as [name of the info which user has to fill].
+
+${prompt}
+
+End with "Sincerely, ${userName}"`
+
       const response = await fetch('/api/generate-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: enhancedPrompt })
       })
 
       if (!response.ok) {
@@ -55,11 +65,9 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
         const root = $getRoot()
         root.clear()
         
-        // Split email by lines and create paragraphs
         const lines = generatedEmail.split('\n').filter(line => line.trim() !== '')
         
         if (lines.length === 0) {
-          // If no lines after filtering, just add the whole email
           const paragraph = $createParagraphNode()
           paragraph.append($createTextNode(generatedEmail))
           root.append(paragraph)
@@ -69,7 +77,6 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
             paragraph.append($createTextNode(line))
             root.append(paragraph)
             
-            // Add spacing between paragraphs for readability
             if (index < lines.length - 1) {
               const spacer = $createParagraphNode()
               root.append(spacer)
@@ -78,7 +85,6 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
         }
       })
 
-      // Reset and close
       setTimeout(() => {
         setPrompt('')
         setGeneratedEmail('')
@@ -102,18 +108,19 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
 
     try {
       const refinementPrompts = {
-        formalise: `Make this email more formal and professional. Keep the same content but use more formal language and structure:`,
-        elaborate: `Expand and elaborate on this email. Add more details and explanations while keeping the main message:`,
-        shorten: `Make this email shorter and more concise. Remove unnecessary details but keep the main message:`,
+        formalise: `Make this email sound more professional but still natural and friendly. Don't overdo the formality. Keep it concise. Maximum 2 paragraphs only.`,
+        elaborate: `Add a bit more detail and context to this email, but keep it concise and natural. Don't make it too long or wordy. Maximum 2 paragraphs only.`,
+        shorten: `Make this email much shorter and more to the point. Cut any unnecessary parts but keep it friendly and natural. Maximum 2 paragraphs only.`,
       }
+
+      const userName = session?.user?.name || 'Regards'
+      const refinedPrompt = `${refinementPrompts[refinementType]}\n\n${generatedEmail}\n\nEnd with "Sincerely, ${userName}"`
 
       const response = await fetch('/api/generate-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `${refinementPrompts[refinementType]}\n\n${generatedEmail}`
+          prompt: refinedPrompt
         })
       })
 
@@ -137,162 +144,166 @@ export function HelpMeWriteDialog({ isOpen, onOpenChange, editorInstance }) {
     setGeneratedEmail('')
   }
 
+  if (!isOpen) return null
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Help me write</DialogTitle>
-          <DialogDescription>
-            Describe what you want to write about and we'll generate an email for you
-          </DialogDescription>
-        </DialogHeader>
-
-        {!showGenerated ? (
-          <div className="space-y-4">
-            {/* Prompt Input */}
+    <div className="fixed inset-0 z-40">
+      {/* Overlay */}
+      <div 
+        className="absolute inset-0 bg-black/30"
+        onClick={() => onOpenChange(false)}
+      />
+      
+      {/* Floating Panel - positioned at toolbar level */}
+      <div className="absolute bottom-20 right-9 w-138 bg-white rounded-lg shadow-xl z-50 max-h-[600px] overflow-y-auto">
+        <div className="p-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Describe your email
-              </label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g., write an email to request a leave of absence for school"
-                className="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
+              <h2 className="text-lg font-semibold text-gray-900">Help me write</h2>
+              <p className="text-sm text-gray-600 mt-1">Describe what you want to write about</p>
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            {/* Generate Button */}
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !prompt.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  'Generate'
-                )}
-              </Button>
-            </DialogFooter>
+            <button
+              onClick={() => onOpenChange(false)}
+              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+            >
+              ×
+            </button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Generated Email Preview */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Generated email
-              </label>
-              <div className="p-4 bg-gray-50 border border-gray-300 rounded-lg max-h-[300px] overflow-y-auto">
-                <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {generatedEmail}
+
+          {!showGenerated ? (
+            <div className="space-y-4">
+              {/* Prompt Input */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Describe your email
+                </label>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="e.g., write an email to request a leave of absence for school"
+                  className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {error}
                 </div>
+              )}
+
+              {/* Generate Button */}
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="text-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !prompt.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate'
+                  )}
+                </Button>
               </div>
             </div>
-
-            {/* Rating Section (like Gmail) */}
-            <div className="py-3 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-3">Rate this suggestion:</p>
-              <div className="flex gap-3 items-center mb-4">
-                <button className="p-2 hover:bg-gray-200 rounded transition-colors" title="Helpful">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.646 7.23a2 2 0 01-1.789 1.106H9m0 0H7.773c-.802 0-1.569-.687-1.769-1.486m12.318-7.218l3.646-7.23c.196-.39.13-.8-.136-1.126-.265-.327-.734-.447-1.126-.11L15 9m0 0H9m0 0l-2.764-3.464m0 0c.196-.39.13-.8-.136-1.126-.265-.327-.734-.447-1.126-.11C4.5 4.5 4 5.5 4 7" />
-                  </svg>
-                </button>
-                <button className="p-2 hover:bg-gray-200 rounded transition-colors" title="Not helpful">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.646-7.23a2 2 0 011.789-1.106H15m0 0h2.227c.802 0 1.569.687 1.769 1.486m-12.318 7.218l-3.646-7.23c-.196-.39-.13-.8.136-1.126.265-.327.734-.447 1.126-.11L9 15m0 0h6m0 0l2.764 3.464m0 0c-.196.39-.13.8.136 1.126.265.327.734.447 1.126.11 1.011-.113 1.5-1.113 1.5-3" />
-                  </svg>
-                </button>
-                <button className="p-2 hover:bg-gray-200 rounded transition-colors" title="More info">
-                  <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                  </svg>
-                </button>
+          ) : (
+            <div className="space-y-4">
+              {/* Generated Email Preview */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Generated email
+                </label>
+                <div className="p-3 bg-gray-50 border border-gray-300 rounded-lg max-h-[200px] overflow-y-auto">
+                  {loading ? (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {generatedEmail}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Refinement Buttons */}
-              <div className="mb-3">
+              <div className="py-2">
                 <p className="text-xs text-gray-600 mb-2">Refine:</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleRefine('formalise')}
                     disabled={loading}
-                    className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
                   >
-                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <span>📋</span>}
                     Formalise
                   </button>
                   <button
                     onClick={() => handleRefine('elaborate')}
                     disabled={loading}
-                    className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
                   >
-                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <span>📝</span>}
                     Elaborate
                   </button>
                   <button
                     onClick={() => handleRefine('shorten')}
                     disabled={loading}
-                    className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
                   >
-                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <span>✂️</span>}
                     Shorten
                   </button>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500">
-                This is a creative writing aid, and is not intended to be factual.
-              </p>
-            </div>
-
-            {/* Footer Buttons */}
-            <DialogFooter className="gap-2 flex justify-between">
-              <button
-                onClick={handleRecreate}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Recreate
-              </button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
+              {/* Footer Buttons */}
+              <div className="flex justify-between gap-2 pt-2 border-t border-gray-200">
+                <button
+                  onClick={handleRecreate}
+                  className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleInsert}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Insert
-                </Button>
+                  Recreate
+                </button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="text-gray-700 h-8 px-3"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleInsert}
+                    className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3"
+                  >
+                    Insert
+                  </Button>
+                </div>
               </div>
-            </DialogFooter>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

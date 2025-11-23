@@ -18,10 +18,29 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
+import { prefetchEmails } from "@/lib/emailCache";
+
 export function NavMain({
   items,
   groupLabel = "Platform"
 }) {
+  // Helper to extract type from URL
+  const handlePrefetch = (url) => {
+    if (!url) return;
+    // Extract type from /dashboard/inbox/all or /dashboard/sent
+    const parts = url.split('/');
+    // Assuming url structure is /dashboard/[type] or /dashboard/[type]/[subtype]
+    // parts[0] = '', parts[1] = 'dashboard', parts[2] = type
+    if (parts.length >= 3) {
+      const type = parts[2];
+      const subtype = parts[3];
+      const queryType = subtype || type;
+      if (queryType) {
+        prefetchEmails(queryType);
+      }
+    }
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>
@@ -51,7 +70,10 @@ export function NavMain({
                       {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
+                            <a 
+                              href={subItem.url}
+                              onMouseEnter={() => handlePrefetch(subItem.url)}
+                            >
                               <span>{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>
@@ -68,7 +90,10 @@ export function NavMain({
           return (
             <SidebarMenuItem key={item.title} className={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
+                <a 
+                  href={item.url}
+                  onMouseEnter={() => handlePrefetch(item.url)}
+                >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </a>

@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { getPrefetchedEmail, updateCachedEmailStatus } from './fetch-emails';
+import { updateEmailInCache } from '@/lib/emailCache';
+
+// Client cache for individual emails
+const emailClientCache = new Map();
 
 export default function ShowEmailViaID({ page }) {
   const { id } = useParams();
@@ -12,25 +18,99 @@ export default function ShowEmailViaID({ page }) {
   const [summary, setSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState(null);
+  const fetchAbortController = useRef(null);
 
   useEffect(() => {
+    const fetchAbortController = new AbortController();
+
     async function fetchEmail() {
       try {
-        const res = await fetch(`/api/gmail/email/${id}`);
+        // 1️⃣ Check prefetch cache first (from hover in email list)
+        const prefetched = getPrefetchedEmail(id);
+        if (prefetched) {
+          console.log(`⚡ Using prefetched email ${id}`);
+          setEmail(prefetched);
+          setLoading(false);
+          markEmailAsReadAfterLoad(prefetched);
+          return;
+        }
+
+        // 2️⃣ Check client cache next
+        if (emailClientCache.has(id)) {
+          const cached = emailClientCache.get(id);
+          setEmail(cached);
+          setLoading(false);
+          markEmailAsReadAfterLoad(cached);
+          return;
+        }
+
+        // 3️⃣ Fetch from server
+        console.log(`📡 Fetching email ${id} from server`);
+        const res = await fetch(`/api/gmail/email/${id}`, {
+          signal: fetchAbortController.signal,
+        });
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Failed to fetch email');
 
+        // Cache it
+        emailClientCache.set(id, data);
         setEmail(data);
+        markEmailAsReadAfterLoad(data);
       } catch (err) {
-        setError(err.message);
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
     }
 
     fetchEmail();
+
+    // Cleanup
+    return () => {
+      fetchAbortController.abort();
+    };
   }, [id]);
+
+  // Mark email as read after it loads (only if unread)
+  const markEmailAsReadAfterLoad = async (emailData) => {
+    // Only mark as read if it's currently unread
+    if (emailData?.labelIds?.includes('UNREAD')) {
+      try {
+        await fetch('/api/gmail/operations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: 'markRead',
+            ids: id,
+          }),
+        });
+        
+        // Update local state to reflect read status
+        setEmail(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            labelIds: (prev.labelIds || []).filter(label => label !== 'UNREAD')
+          };
+        });
+
+        // Update all cached copies (both detail cache and list caches)
+        updateCachedEmailStatus(id, 'markRead');
+        updateEmailInCache(id, 'markRead');
+        emailClientCache.set(id, {
+          ...emailData,
+          labelIds: (emailData.labelIds || []).filter(label => label !== 'UNREAD')
+        });
+
+        console.log(`✓ Email marked as read and caches updated`);
+      } catch (err) {
+        console.error('Failed to mark email as read:', err);
+      }
+    }
+  };
 
   const handleSummarize = async () => {
     if (!email) return;
@@ -94,25 +174,55 @@ export default function ShowEmailViaID({ page }) {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  if (loading) return <div className="p-4">Loading email...</div>;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
-  if (!email) return <div className="p-4 text-gray-500">Email not found</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner className="size-8" />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 text-lg">Error: {error}</div>
+      </div>
+    );
+  }
 
+  if (!email) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner className="size-8" />
+      </div>
+    );
+  }
+
+  // Show content even while loading (progressive rendering)
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">{email.subject}</h1>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-4">{email.subject || 'Loading...'}</h1>
 
-        <div className="text-sm text-gray-700 space-y-1 mb-4">
-          <div>
-            <strong>From:</strong> {email.from}
+            <div className="text-sm text-gray-700 space-y-1 mb-4">
+              <div>
+                <strong>From:</strong> {email.from || 'Loading...'}
+              </div>
+              <div>
+                <strong>To:</strong> {email.to || 'Loading...'}
+              </div>
+              <div>
+                <strong>Date:</strong> {email.date ? formatDate(email.date) : 'Loading...'}
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>To:</strong> {email.to}
-          </div>
-          <div>
-            <strong>Date:</strong> {formatDate(email.date)}
-          </div>
+          {loading && (
+            <div className="ml-4">
+              <Spinner className="size-5" />
+            </div>
+          )}
         </div>
 
         {/* Summarize Button */}
@@ -124,7 +234,7 @@ export default function ShowEmailViaID({ page }) {
           >
             {summarizing ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="size-4" />
                 <span>Summarizing...</span>
               </>
             ) : (

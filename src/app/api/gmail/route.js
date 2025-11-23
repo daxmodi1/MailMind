@@ -1,12 +1,59 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { getCachedSession } from "@/lib/sessionCache";
 import { createGmailClient } from "@/lib/gmailUtils";
+
+// Simple in-memory cache for email metadata (5 minute TTL)
+const emailCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(userId, type) {
+  return `${userId}:${type}`;
+}
+
+function getFromCache(key) {
+  const cached = emailCache.get(key);
+  if (!cached) return null;
+  
+  // Check if cache expired
+  if (Date.now() - cached.timestamp > CACHE_TTL) {
+    emailCache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+}
+
+function setCache(key, data) {
+  emailCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+// Export functions for cache invalidation
+export function invalidateUserEmailCache(userId) {
+  // Clear all caches for this user
+  const keysToDelete = [];
+  emailCache.forEach((value, key) => {
+    if (key.startsWith(`${userId}:`)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => emailCache.delete(key));
+  console.log(`🗑️ Invalidated ${keysToDelete.length} cache entries for user ${userId}`);
+}
+
+export function invalidateEmailTypeCache(userId, type) {
+  const key = getCacheKey(userId, type);
+  if (emailCache.has(key)) {
+    emailCache.delete(key);
+    console.log(`🗑️ Invalidated cache for ${type}`);
+  }
+}
 
 export async function GET(req) {
   try {
-    // current user's session
-    const session = await getServerSession(authOptions);
+    const session = await getCachedSession(req);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -19,44 +66,59 @@ export async function GET(req) {
       return NextResponse.json({ error: "No access or refresh token" }, { status: 401 });
     }
 
-    const gmail = createGmailClient(accessToken, refreshToken);
-    //all type of the emails fetching
     const type = new URL(req.url).searchParams.get("type") || "inbox";
+    const userId = session.user.id || session.user.email;
+    const cacheKey = getCacheKey(userId, type);
+
+    // Check cache first
+    const cachedEmails = getFromCache(cacheKey);
+    if (cachedEmails) {
+      return NextResponse.json(cachedEmails, {
+        headers: { 'X-Cache': 'HIT' }
+      });
+    }
+
+    const gmail = createGmailClient(accessToken, refreshToken);
 
     let emails = [];
     switch (type) {
       case "inbox":
-        emails = await fetchFullEmails(gmail, "in:inbox");
+        emails = await fetchMetadataEmails(gmail, "in:inbox");
         break;
       case "sent":
-        emails = await fetchFullEmails(gmail, "in:sent");
+        emails = await fetchMetadataEmails(gmail, "in:sent");
         break;
       case "unread":
-        emails = await fetchFullEmails(gmail, "in:unread");
+        emails = await fetchMetadataEmails(gmail, "in:unread");
         break;
       case "draft":
-        emails = await fetchFullEmails(gmail, "in:draft");
+        emails = await fetchMetadataEmails(gmail, "in:draft");
         break;
       case "spam":
-        emails = await fetchFullEmails(gmail, "in:spam");
+        emails = await fetchMetadataEmails(gmail, "in:spam");
         break;
       case "trash":
-        emails = await fetchFullEmails(gmail, "in:trash");
+        emails = await fetchMetadataEmails(gmail, "in:trash");
         break;
       case "archive":
-        emails = await fetchFullEmails(gmail, "in:archive");
+        emails = await fetchMetadataEmails(gmail, "in:archive");
         break;
       case "all":
-        emails = await fetchFullEmails(gmail,  "-in:spam -in:trash");
+        emails = await fetchMetadataEmails(gmail,  "-in:spam -in:trash");
         break;
       case "done":
-        emails = await fetchFullEmails(gmail, "in:read");
+        emails = await fetchMetadataEmails(gmail, "in:read");
         break;
       default:
-        emails = await fetchFullEmails(gmail, "in:inbox");
+        emails = await fetchMetadataEmails(gmail, "in:inbox");
     }
 
-    return NextResponse.json(emails);
+    // Store in cache
+    setCache(cacheKey, emails);
+
+    return NextResponse.json(emails, {
+      headers: { 'X-Cache': 'MISS' }
+    });
 
   } catch (error) {
     console.error("Gmail API error:", error);
@@ -75,96 +137,97 @@ export async function GET(req) {
   }
 }
 
-// Fetching the gmails from the gmail client
-async function fetchFullEmails(gmail, query = null, maxResults = 20) {
+// Fetch metadata only for the email list (much faster - no full content)
+async function fetchMetadataEmails(gmail, query = null, maxResults = 20) {
   try {
-    // Prepare the query parameters
-    const queryParams = {
-      userId: 'me',
-      maxResults,
-    };
-    // Add search query if provided (for read/unread filtering)
-    if (query) {
-      queryParams.q = query;
-    }
-
-    // Get list of emails
-    const emailList = await gmail.users.messages.list(queryParams);
-
-    if (!emailList.data.messages) {
-      return [];
-    }
-
-    const emails = [];
-    
-    // Fetch full content for each email
-    for (const message of emailList.data.messages) {
-      try {
-        const email = await gmail.users.messages.get({
-          userId: 'me',
-          id: message.id,
-          format: 'full', // Get complete email structure
-        });
-        
-        const emailData = parseEmailContent(email.data);
-        emails.push(emailData);
-      } catch (emailError) {
-        console.error(`Error fetching email ${message.id}:`, emailError);
-        // Continue with other emails even if one fails
-        continue;
-      }
-    }
-    
-    return emails;
-  } catch (error) {
-    console.error('Error fetching emails:', error);
-    throw error;
-  }
-}
-
-// Fetch read emails by filtering out unread ones
-async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
-  try {
-    // Get list of emails from specified labels
+    // Get list of emails IDs only
     const emailList = await gmail.users.messages.list({
       userId: 'me',
-      labelIds,
-      maxResults: maxResults * 2, // Fetch more to account for filtering
+      maxResults,
+      q: query || undefined,
+      fields: 'messages(id)',
     });
 
     if (!emailList.data.messages) {
       return [];
     }
 
-    const emails = [];
-    let readCount = 0;
+    // Fetch in batches of 10 (respect Gmail API rate limits)
+    const batchSize = 10;
+    const allEmails = [];
     
-    // Fetch full content for each email and filter for read emails
-    for (const message of emailList.data.messages) {
-      if (readCount >= maxResults) break;
+    for (let i = 0; i < emailList.data.messages.length; i += batchSize) {
+      const batch = emailList.data.messages.slice(i, i + batchSize);
       
-      try {
-        const email = await gmail.users.messages.get({
+      const promises = batch.map(message =>
+        gmail.users.messages.get({
           userId: 'me',
           id: message.id,
-          format: 'full',
-        });
-        
-        // Check if email is read (doesn't have UNREAD label)
-        const isUnread = email.data.labelIds && email.data.labelIds.includes('UNREAD');
-        
-        if (!isUnread) {
-          const emailData = parseEmailContent(email.data);
-          emails.push(emailData);
-          readCount++;
-        }
-      } catch (emailError) {
-        console.error(`Error fetching email ${message.id}:`, emailError);
-        continue;
-      }
+          format: 'metadata',
+          fields: 'payload/headers,snippet,labelIds,id,threadId',
+        })
+          .then(email => parseMetadataOnly(email.data))
+          .catch(() => null)
+      );
+
+      const results = await Promise.allSettled(promises);
+      const batchEmails = results
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value);
+      
+      allEmails.push(...batchEmails);
     }
     
-    return emails;
+    return allEmails;
+  } catch (error) {
+    console.error('Error fetching email list:', error);
+    throw error;
+  }
+}
+
+// Fetch read emails by filtering out unread ones (metadata only)
+async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
+  try {
+    const emailList = await gmail.users.messages.list({
+      userId: 'me',
+      labelIds,
+      maxResults: maxResults * 2,
+      fields: 'messages(id)',
+    });
+
+    if (!emailList.data.messages) {
+      return [];
+    }
+
+    const batchSize = 10;
+    const allEmails = [];
+    
+    for (let i = 0; i < emailList.data.messages.length && allEmails.length < maxResults; i += batchSize) {
+      const batch = emailList.data.messages.slice(i, i + batchSize);
+      
+      const promises = batch.map(message =>
+        gmail.users.messages.get({
+          userId: 'me',
+          id: message.id,
+          format: 'metadata',
+          fields: 'payload/headers,snippet,labelIds,id,threadId',
+        })
+          .then(email => {
+            const isUnread = email.data.labelIds?.includes('UNREAD');
+            return !isUnread ? parseMetadataOnly(email.data) : null;
+          })
+          .catch(() => null)
+      );
+
+      const results = await Promise.allSettled(promises);
+      const batchEmails = results
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value);
+      
+      allEmails.push(...batchEmails);
+    }
+    
+    return allEmails.slice(0, maxResults);
   } catch (error) {
     console.error('Error fetching read emails:', error);
     throw error;
@@ -216,7 +279,33 @@ function extractCleanText(email) {
   return '';
 }
 
-// Parsing email Content - MODIFIED THIS
+// Parse metadata ONLY - for list view (headers + snippet, NO body content)
+function parseMetadataOnly(email) {
+  const headers = email.payload.headers || [];
+  
+  // Fast header lookup
+  const headerMap = {};
+  for (const h of headers) {
+    if (!headerMap[h.name]) {
+      headerMap[h.name] = h.value;
+    }
+  }
+  
+  return {
+    id: email.id,
+    threadId: email.threadId,
+    subject: headerMap['Subject'] || 'No Subject',
+    from: headerMap['From'] || 'Unknown Sender',
+    to: headerMap['To'] || '',
+    date: headerMap['Date'] || '',
+    snippet: email.snippet || '',
+    previewText: email.snippet || '',
+    labelIds: email.labelIds || [],
+    hasAttachments: false,
+  };
+}
+
+// Parsing email Content - FULL content (used only when email is opened/clicked)
 export function parseEmailContent(email) {
   const headers = email.payload.headers || [];
   const subject = headers.find(h => h.name === 'Subject')?.value || 'No Subject';
@@ -225,10 +314,10 @@ export function parseEmailContent(email) {
   const date = headers.find(h => h.name === 'Date')?.value || '';
   const messageId = headers.find(h => h.name === 'Message-ID')?.value || '';
   
-  // Parse the email body and attachments
+  // Parse the email body and attachments (only for full view)
   const content = parseEmailParts(email.payload);
   
-  // ADDED: Create clean preview text
+  // Create clean preview text
   const emailForCleaning = {
     snippet: email.snippet || '',
     textBody: content.text,
@@ -245,17 +334,14 @@ export function parseEmailContent(email) {
     date,
     messageId,
     snippet: email.snippet || '',
-    // MODIFIED: Keep original for full email view
     htmlBody: content.html,
     textBody: content.text,
-    // ADDED: Clean text for safe preview display
     previewText: cleanPreviewText,
     attachments: content.attachments,
     inlineImages: content.inlineImages,
     hasAttachments: content.attachments.length > 0,
     hasInlineImages: content.inlineImages.length > 0,
     labelIds: email.labelIds || [],
-    
   };
 }
 

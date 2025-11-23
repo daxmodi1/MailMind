@@ -1,19 +1,42 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../auth/[...nextauth]/route";
+import { getCachedSession } from "@/lib/sessionCache";
 import { createGmailClient } from "@/lib/gmailUtils";
 import { parseEmailContent } from "@/app/api/gmail/route";
+
+// Cache individual emails (15 minute TTL)
+const emailCache = new Map();
+const EMAIL_CACHE_TTL = 15 * 60 * 1000;
+
+function getEmailCacheKey(userId, emailId) {
+  return `email:${userId}:${emailId}`;
+}
+
+function getFromEmailCache(key) {
+  const cached = emailCache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() - cached.timestamp > EMAIL_CACHE_TTL) {
+    emailCache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+}
+
+function setEmailCache(key, data) {
+  emailCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
 
 export async function GET(req, { params }) {
   const { id } = await params;
   
-  console.log('Fetching email with ID:', id);
-  
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getCachedSession(req);
 
     if (!session || !session.user) {
-      console.log('No session found');
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
@@ -24,10 +47,19 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: "No access or refresh token" }, { status: 401 });
     }
 
-    console.log('Creating Gmail client...');
+    const userId = session.user.id || session.user.email;
+    const cacheKey = getEmailCacheKey(userId, id);
+
+    // Check cache first
+    const cachedEmail = getFromEmailCache(cacheKey);
+    if (cachedEmail) {
+      return NextResponse.json(cachedEmail, {
+        headers: { 'X-Cache': 'HIT' }
+      });
+    }
+
     const gmail = createGmailClient(accessToken, refreshToken);
     
-    console.log('Fetching email from Gmail API...');
     // Fetch the specific email
     const email = await gmail.users.messages.get({
       userId: 'me',
@@ -35,11 +67,15 @@ export async function GET(req, { params }) {
       format: 'full',
     });
 
-    console.log('Email fetched successfully, parsing content...');
-    // Use the imported parsing function
+    // Parse content
     const emailData = parseEmailContent(email.data);
     
-    return NextResponse.json(emailData);
+    // Cache it
+    setEmailCache(cacheKey, emailData);
+    
+    return NextResponse.json(emailData, {
+      headers: { 'X-Cache': 'MISS' }
+    });
     
   } catch (error) {
     console.error('Detailed error fetching single email:', {

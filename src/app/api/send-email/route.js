@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[...nextauth]/route"
+import { getCachedSession } from "@/lib/sessionCache"
 import { google } from "googleapis"
 import { NextResponse } from "next/server"
 
 export async function POST(req) {
     try {
         // 1) Authenticate user session
-        const session = await getServerSession(authOptions)
+        const session = await getCachedSession(req)
 
         if (!session || !session.accessToken) {
             return NextResponse.json(
