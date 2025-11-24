@@ -3,9 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 export default function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   return (
     <div className="pt-10 px-4">
@@ -48,7 +50,7 @@ export default function Nav() {
             <button className="group p-[4px] rounded-[12px] bg-gradient-to-b from-white to-stone-200/40 shadow-[0_1px_3px_rgba(0,0,0,0.5)] active:shadow-[0_0px_1px_rgba(0,0,0,0.5)] active:scale-[0.995]">
               <div className="bg-gradient-to-b from-stone-200/40 to-white/80 rounded-[8px] px-2 py-0.5">
                 <div className="flex gap-2 items-center">
-                  <span className="font-semibold">Get Started</span>
+                  <Link href="/login" className="font-semibold">Get Started</Link>
                 </div>
               </div>
             </button>
@@ -110,11 +112,13 @@ export default function Nav() {
               <div className="pt-2">
                 <div className="bg-gradient-to-b from-stone-300/40 to-transparent p-[4px] rounded-[16px]">
                   <button className="group p-[4px] rounded-[12px] bg-gradient-to-b from-white to-stone-200/40 shadow-[0_1px_3px_rgba(0,0,0,0.5)] active:shadow-[0_0px_1px_rgba(0,0,0,0.5)] active:scale-[0.995] w-full">
-                    <div className="bg-gradient-to-b from-stone-200/40 to-white/80 rounded-[8px] px-2 py-0.5">
-                      <div className="flex gap-2 items-center justify-center">
-                        <span className="font-semibold">Get Started</span>
+                    <Link href="/login" className="block">
+                      <div className="bg-gradient-to-b from-stone-200/40 to-white/80 rounded-[8px] px-2 py-0.5">
+                        <div className="flex gap-2 items-center justify-center">
+                          <span className="font-semibold">Get Started</span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                   </button>
                 </div>
               </div>

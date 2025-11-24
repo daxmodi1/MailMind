@@ -6,7 +6,7 @@ const StartBtn = () => {
   return (
     <div className="inline-block">
       <Link
-        href="/signup"
+        href="/login"
         className="relative inline-flex items-center justify-center w-33 md:w-38 lg:w-40 py-2.5 md:py-3 text-white 
           rounded-full cursor-pointer 
           bg-gradient-to-b from-gray-600 to-[#111111] 

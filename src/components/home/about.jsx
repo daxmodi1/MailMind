@@ -5,6 +5,7 @@ import { PointerHighlight } from "../ui/pointer-highlight";
 import { TypewriterEffectSmooth } from "../ui/typewriter-effect";
 import { Marquee } from "@/components/magicui/marquee";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 
 const blogContent = {
   author: "dax",
@@ -12,6 +13,28 @@ const blogContent = {
 };
 
 export default function About() {
+  const ref = useRef(null);
+  
+  useEffect(() => {
+    // Trigger animation observers for better support
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = "1";
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   const words = [
     { text: "that ", 
       className: "text-3xl md:text-5xl lg:text-6xl"
@@ -25,7 +48,7 @@ export default function About() {
   ];
 
   return (
-    <section className="relative pt-20 md:pt-40 px-4 md:px-8 lg:px-16 text-center">
+    <section ref={ref} className="relative pt-20 md:pt-40 px-4 md:px-8 lg:px-16 text-center opacity-0 transition-opacity duration-1000">
 
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-y-5">
 

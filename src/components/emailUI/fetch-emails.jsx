@@ -167,7 +167,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   // 🌀 Loading State
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full w-full">
         <Spinner className="size-8" />
       </div>
     );

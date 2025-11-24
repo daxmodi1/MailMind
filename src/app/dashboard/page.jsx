@@ -21,8 +21,8 @@ export default function Dashboard() {
 
     // Not logged in → redirect to login page
     if (status === "unauthenticated") {
-      console.log("User not authenticated, redirecting to signin...");
-      router.replace("/signin");
+      console.log("User not authenticated, redirecting to login...");
+      router.replace("/login");
       return;
     }
 
@@ -30,7 +30,7 @@ export default function Dashboard() {
     if (session?.error === "RefreshAccessTokenError") {
       console.log("Token refresh failed, redirecting to signin...");
       // Sign out to clear the invalid session
-      router.push("/api/auth/signout?callbackUrl=/signin");
+      router.push("/api/auth/signout?callbackUrl=/login");
       return;
     }
 

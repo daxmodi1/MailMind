@@ -1,9 +1,14 @@
 import React from 'react';
 import './custombtn.css';
 
-const CustomButton = ({ children }) => {
+const CustomButton = ({ children, onClick, className, ...props }) => {
   return (
-    <button className="button-name rounded-full" type="button">
+    <button 
+      className={`button-name rounded-full ${className || ''}`} 
+      type="button"
+      onClick={onClick}
+      {...props}
+    >
       {children}
     </button>
   );

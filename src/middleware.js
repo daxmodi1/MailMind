@@ -24,12 +24,12 @@ export async function middleware(req) {
 
   // No token → redirect to login
   if (!token) {
-    return NextResponse.redirect(new URL("/signin", req.url));
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   // Expired token → redirect to login
   if (token.error === "ExpiredToken") {
-    return NextResponse.redirect(new URL("/signin", req.url));
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();

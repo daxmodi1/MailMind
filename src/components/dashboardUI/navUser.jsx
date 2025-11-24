@@ -90,7 +90,7 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="hover:bg-destructive hover:text-white">
-              <button onClick={() => signOut({ callbackUrl: '/signin' })}>
+              <button onClick={() => signOut({ callbackUrl: '/login' })}>
                 <LogOut className="mr-2" />
                 Sign Out
               </button>

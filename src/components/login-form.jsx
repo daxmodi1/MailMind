@@ -1,49 +1,63 @@
+'use client'
+import { GalleryVerticalEnd } from "lucide-react"
+import CustomButton from "./home/custom-btn"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { signIn } from 'next-auth/react';
 import Image from "next/image";
-import CustomButton from "./home/custom-btn";
 export function LoginForm({
   className,
   ...props
 }) {
+  const handleSignIn = async () => {
+    try {
+      console.log("Starting Google sign in...");
+      // Sign in with Google
+      await signIn("google", { callbackUrl: "/dashboard", redirect: true });
+    } catch (error) {
+      console.error('Sign in error:', error);
+    }
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Login to your account</h1>
-        <p className="text-muted-foreground text-sm text-balance">
-          Enter your email below to login to your account
-        </p>
-      </div>
-      <div className="grid gap-6">
-        <div className="grid gap-3">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
-        </div>
-        <div className="grid gap-3">
-          <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
-            <a href="#" className="ml-auto text-sm underline-offset-4 hover:underline">
-              Forgot your password?
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <form>
+        <FieldGroup>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <a href="#" className="flex flex-col items-center gap-2 font-medium">
+                <Image src="/logo.png" width={60} height={60} alt="logo" />
+              <span className="sr-only">MailMind.AI</span>
             </a>
+            <h1 className="text-xl font-bold">Welcome to MailMind.AI</h1>
           </div>
-          <Input id="password" type="password" required />
-        </div>
-        <Button type="submit" className="w-full">
-          Login
-        </Button>
-        <div
-          className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-          <span className="text-muted-foreground relative z-10 px-2">
-            Or continue with
-          </span>
-        </div>
-        <CustomButton>
-          <Image src="/icons/gmail.svg" width={30} height={30} alt="gmailIcon" />
-          <span className="text-base pl-2">Login With Gmail</span>
-        </CustomButton>
-      </div>
-    </form>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <Input id="email" type="email" placeholder="m@example.com" required />
+          </Field>
+          <Field>
+            <Button type="submit">Login</Button>
+          </Field>
+          <FieldSeparator>Or</FieldSeparator>
+          <Field className="flex">
+            <CustomButton onClick={handleSignIn} className="w-full">
+              <Image src="/icons/gmail.svg" width={30} height={30} alt="gmailIcon" />
+              <span className="text-base pl-2">Login With Gmail</span>
+            </CustomButton>
+          </Field>
+        </FieldGroup>
+      </form>
+      <FieldDescription className="px-6 text-center">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
+      </FieldDescription>
+    </div>
   );
 }
