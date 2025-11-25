@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { PenSquare } from "lucide-react"
+import { Plus } from "lucide-react"
 import BreadcrumbWrapper from "@/components/dashboardUI/breadcrumbWrapper"
 import WriteMessage from "@/components/emailUI/writeMessageModel"
 
@@ -20,7 +20,7 @@ export default function SiteHeader() {
               onClick={() => setIsWriteMessageOpen(true)}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              <PenSquare className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" />
               Write Message
             </Button>
           </div>

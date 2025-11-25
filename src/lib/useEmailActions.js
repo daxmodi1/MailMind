@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { updateCachedEmail, removeCachedEmail } from './emailCache';
 
 export function useEmailActions(type, subtype) {
   const [selectedEmails, setSelectedEmails] = useState(new Set());
@@ -41,6 +42,33 @@ export function useEmailActions(type, subtype) {
       if (!res.ok) throw new Error(data.error || `Failed to ${operation}`);
 
       const idsArray = Array.isArray(ids) ? ids : [ids];
+
+      // Update cache for all operations
+      idsArray.forEach(id => {
+        console.log(`📝 Performing ${operation} on ${id}`);
+        if (removeFromUI || operation === 'delete' || operation === 'archive') {
+          // Remove from cache
+          console.log(`🗑️ Removing ${id} from cache`);
+          removeCachedEmail(id);
+        } else if (operation === 'markRead') {
+          // Update cache to remove UNREAD label
+          console.log(`📖 Marking ${id} as read in cache`);
+          updateCachedEmail(id, (email) => ({
+            ...email,
+            labelIds: (email.labelIds || []).filter(label => label !== 'UNREAD')
+          }));
+        } else if (operation === 'markUnread') {
+          // Update cache to add UNREAD label
+          console.log(`📬 Marking ${id} as unread in cache`);
+          updateCachedEmail(id, (email) => {
+            const labelIds = email.labelIds || [];
+            if (!labelIds.includes('UNREAD')) {
+              return { ...email, labelIds: [...labelIds, 'UNREAD'] };
+            }
+            return email;
+          });
+        }
+      });
 
       if (removeFromUI && setEmails) {
         // Remove emails from UI (for delete/archive)

@@ -3,11 +3,18 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
+import NavButton from "./nav-button-server";
 
 export default function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { data: session, status } = useSession();
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setIsMenuOpen(false);
+    }
+  };
 
   return (
     <div className="pt-10 px-4">
@@ -27,18 +34,18 @@ export default function Nav() {
 
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link href="/" className="hover:text-gray-900 transition-colors">
+          <button onClick={() => scrollToSection('home')} className="hover:text-gray-900 transition-colors">
             Home
-          </Link>
-          <Link href="/#features" className="hover:text-gray-900 transition-colors">
+          </button>
+          <button onClick={() => scrollToSection('features')} className="hover:text-gray-900 transition-colors">
             Features
-          </Link>
-          <Link href="/#pricing" className="hover:text-gray-900 transition-colors">
+          </button>
+          <button onClick={() => scrollToSection('pricing')} className="hover:text-gray-900 transition-colors">
             Pricing
-          </Link>
-          <Link href="/#faq" className="hover:text-gray-900 transition-colors">
+          </button>
+          <button onClick={() => scrollToSection('faq')} className="hover:text-gray-900 transition-colors">
             FAQ
-          </Link>
+          </button>
           <Link href="/blog" className="hover:text-gray-900 transition-colors">
             Blog
           </Link>
@@ -46,15 +53,7 @@ export default function Nav() {
 
         {/* Desktop Get Started Button */}
         <div className="hidden md:flex justify-center items-center gap-12 h-full">
-          <div className="bg-gradient-to-b from-stone-300/40 to-transparent p-[4px] rounded-[16px]">
-            <button className="group p-[4px] rounded-[12px] bg-gradient-to-b from-white to-stone-200/40 shadow-[0_1px_3px_rgba(0,0,0,0.5)] active:shadow-[0_0px_1px_rgba(0,0,0,0.5)] active:scale-[0.995]">
-              <div className="bg-gradient-to-b from-stone-200/40 to-white/80 rounded-[8px] px-2 py-0.5">
-                <div className="flex gap-2 items-center">
-                  <Link href="/login" className="font-semibold">Get Started</Link>
-                </div>
-              </div>
-            </button>
-          </div>
+          <NavButton />
         </div>
 
         {/* Mobile Menu Button */}
@@ -72,34 +71,30 @@ export default function Nav() {
         {isMenuOpen && (
           <div className="md:hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-lg border border-gray-100 z-50">
             <div className="flex flex-col p-4 space-y-4">
-              <Link
-                href="/"
-                className="hover:text-gray-900 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
+              <button
+                onClick={() => scrollToSection('home')}
+                className="hover:text-gray-900 transition-colors py-2 text-left"
               >
                 Home
-              </Link>
-              <Link
-                href="/#features"
-                className="hover:text-gray-900 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
+              </button>
+              <button
+                onClick={() => scrollToSection('features')}
+                className="hover:text-gray-900 transition-colors py-2 text-left"
               >
                 Features
-              </Link>
-              <Link
-                href="/#pricing"
-                className="hover:text-gray-900 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
+              </button>
+              <button
+                onClick={() => scrollToSection('pricing')}
+                className="hover:text-gray-900 transition-colors py-2 text-left"
               >
                 Pricing
-              </Link>
-              <Link
-                href="/#faq"
-                className="hover:text-gray-900 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
+              </button>
+              <button
+                onClick={() => scrollToSection('faq')}
+                className="hover:text-gray-900 transition-colors py-2 text-left"
               >
                 FAQ
-              </Link>
+              </button>
               <Link
                 href="/blog"
                 className="hover:text-gray-900 transition-colors py-2"
@@ -110,17 +105,7 @@ export default function Nav() {
 
               {/* Mobile Get Started Button */}
               <div className="pt-2">
-                <div className="bg-gradient-to-b from-stone-300/40 to-transparent p-[4px] rounded-[16px]">
-                  <button className="group p-[4px] rounded-[12px] bg-gradient-to-b from-white to-stone-200/40 shadow-[0_1px_3px_rgba(0,0,0,0.5)] active:shadow-[0_0px_1px_rgba(0,0,0,0.5)] active:scale-[0.995] w-full">
-                    <Link href="/login" className="block">
-                      <div className="bg-gradient-to-b from-stone-200/40 to-white/80 rounded-[8px] px-2 py-0.5">
-                        <div className="flex gap-2 items-center justify-center">
-                          <span className="font-semibold">Get Started</span>
-                        </div>
-                      </div>
-                    </Link>
-                  </button>
-                </div>
+                <NavButton />
               </div>
             </div>
           </div>

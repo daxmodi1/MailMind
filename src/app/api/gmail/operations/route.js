@@ -43,13 +43,9 @@ export async function POST(request) {
       );
     }
 
-    // Invalidate email list cache for this user so it refreshes next time
-    const userId = session.user?.id || session.user?.email;
-    if (userId) {
-      invalidateUserEmailCache(userId);
-      console.log(`✓ Cache invalidated for user after ${operation}`);
-    }
-
+    // Don't invalidate cache - UI updates optimistically
+    // Cache will refresh on manual refresh or after TTL expires
+    
     return NextResponse.json({
       success: true,
       count: emailIds.length

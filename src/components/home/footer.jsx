@@ -30,12 +30,12 @@ export default function Footer() {
 
         {/* Social icons */}
         <div className="flex justify-center gap-5 max-w-xs">
-          <Image src="/icons/linkedin.svg" alt="linkedin" width={30} height={30} />
-          <Image src="/icons/instagram.svg" alt="instagram" width={30} height={30} />
-          <Image src="/icons/twitter.svg" alt="twitter" width={30} height={30} />
-          <Image src="/icons/youtube.svg" alt="youtube" width={30} height={30} />
+          <Link href="https://www.linkedin.com/in/daxil-modi/"><Image src="/icons/linkedin.svg" alt="linkedin" width={30} height={30} /></Link>
+          <Link href="https://www.instagram.com/dax_modi1/"><Image src="/icons/instagram.svg" alt="instagram" width={30} height={30} /></Link>
+          <Link href="https://x.com/Daxil_Modi"><Image src="/icons/twitter.svg" alt="twitter" width={30} height={30} /></Link>
+          <Link href="/"><Image src="/icons/youtube.svg" alt="youtube" width={30} height={30} /></Link>
         </div>
       </footer>
     </div>
   );
-}
+} 

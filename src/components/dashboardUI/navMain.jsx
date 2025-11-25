@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 import {
   Collapsible,
@@ -15,7 +16,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
+  SidebarMenuSubItem, 
 } from "@/components/ui/sidebar"
 
 import { prefetchEmails } from "@/lib/emailCache";
@@ -27,17 +28,23 @@ export function NavMain({
   // Helper to extract type from URL
   const handlePrefetch = (url) => {
     if (!url) return;
-    // Extract type from /dashboard/inbox/all or /dashboard/sent
-    const parts = url.split('/');
-    // Assuming url structure is /dashboard/[type] or /dashboard/[type]/[subtype]
-    // parts[0] = '', parts[1] = 'dashboard', parts[2] = type
-    if (parts.length >= 3) {
-      const type = parts[2];
-      const subtype = parts[3];
-      const queryType = subtype || type;
-      if (queryType) {
-        prefetchEmails(queryType);
+    try {
+      // Extract type from /dashboard/inbox/all or /dashboard/sent or /dashboard/inbox/unread
+      const parts = url.split('/').filter(Boolean); // Remove empty strings
+      // parts[0] = 'dashboard', parts[1] = type, parts[2] = subtype (optional)
+      if (parts.length >= 2) {
+        const type = parts[1];
+        const subtype = parts[2];
+        const queryType = subtype || type;
+        
+        console.log(`📤 Prefetching from navMain:`, { url, type, subtype, queryType });
+        
+        if (queryType && queryType !== 'id') {
+          prefetchEmails(queryType);
+        }
       }
+    } catch (err) {
+      console.error('Error in handlePrefetch:', err);
     }
   };
 
@@ -52,7 +59,7 @@ export function NavMain({
               <Collapsible
                 key={item.title}
                 asChild
-                defaultOpen={item.isActive} // expand only if active
+                defaultOpen={false}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
@@ -70,12 +77,15 @@ export function NavMain({
                       {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
-                            <a 
+                            <Link 
                               href={subItem.url}
-                              onMouseEnter={() => handlePrefetch(subItem.url)}
+                              onMouseEnter={(e) => {
+                                e.preventDefault?.();
+                                handlePrefetch(subItem.url);
+                              }}
                             >
                               <span>{subItem.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
@@ -88,15 +98,18 @@ export function NavMain({
           
           // If item has no subitems, render as regular menu item
           return (
-            <SidebarMenuItem key={item.title} className={item.title}>
+            <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <a 
+                <Link 
                   href={item.url}
-                  onMouseEnter={() => handlePrefetch(item.url)}
+                  onMouseEnter={(e) => {
+                    e.preventDefault?.();
+                    handlePrefetch(item.url);
+                  }}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           );

@@ -67,57 +67,69 @@ export async function GET(req) {
     }
 
     const type = new URL(req.url).searchParams.get("type") || "inbox";
+    const pageToken = new URL(req.url).searchParams.get("pageToken") || null;
+    const refresh = new URL(req.url).searchParams.get("refresh") === "true";
     const userId = session.user.id || session.user.email;
-    const cacheKey = getCacheKey(userId, type);
+    const cacheKey = getCacheKey(userId, `${type}:${pageToken || 'first'}`);
 
-    // Check cache first
-    const cachedEmails = getFromCache(cacheKey);
-    if (cachedEmails) {
-      return NextResponse.json(cachedEmails, {
-        headers: { 'X-Cache': 'HIT' }
-      });
+    // Clear server cache if refresh requested
+    if (refresh) {
+      invalidateUserEmailCache(userId);
+      console.log(`🔄 Refresh requested - server cache cleared for user ${userId}`);
+    }
+
+    // Check cache first (only for first page and not a refresh request)
+    if (!pageToken && !refresh) {
+      const cachedEmails = getFromCache(cacheKey);
+      if (cachedEmails) {
+        return NextResponse.json(cachedEmails, {
+          headers: { 'X-Cache': 'HIT' }
+        });
+      }
     }
 
     const gmail = createGmailClient(accessToken, refreshToken);
 
-    let emails = [];
+    let result = {};
     switch (type) {
       case "inbox":
-        emails = await fetchMetadataEmails(gmail, "in:inbox");
+        result = await fetchMetadataEmails(gmail, "in:inbox", pageToken);
         break;
       case "sent":
-        emails = await fetchMetadataEmails(gmail, "in:sent");
+        result = await fetchMetadataEmails(gmail, "in:sent", pageToken);
         break;
       case "unread":
-        emails = await fetchMetadataEmails(gmail, "in:unread");
+        result = await fetchMetadataEmails(gmail, "in:unread", pageToken);
         break;
       case "draft":
-        emails = await fetchMetadataEmails(gmail, "in:draft");
+        result = await fetchMetadataEmails(gmail, "in:draft", pageToken);
         break;
       case "spam":
-        emails = await fetchMetadataEmails(gmail, "in:spam");
+        result = await fetchMetadataEmails(gmail, "in:spam", pageToken);
         break;
       case "trash":
-        emails = await fetchMetadataEmails(gmail, "in:trash");
+        result = await fetchMetadataEmails(gmail, "in:trash", pageToken);
         break;
       case "archive":
-        emails = await fetchMetadataEmails(gmail, "in:archive");
+        result = await fetchMetadataEmails(gmail, "in:archive", pageToken);
         break;
       case "all":
-        emails = await fetchMetadataEmails(gmail,  "-in:spam -in:trash");
+        result = await fetchMetadataEmails(gmail,  "-in:spam -in:trash", pageToken);
         break;
       case "done":
-        emails = await fetchMetadataEmails(gmail, "in:read");
+        result = await fetchMetadataEmails(gmail, "in:read", pageToken);
         break;
       default:
-        emails = await fetchMetadataEmails(gmail, "in:inbox");
+        result = await fetchMetadataEmails(gmail, "in:inbox", pageToken);
     }
 
-    // Store in cache
-    setCache(cacheKey, emails);
+    // Store in cache (only first page)
+    if (!pageToken) {
+      setCache(cacheKey, result);
+    }
 
-    return NextResponse.json(emails, {
-      headers: { 'X-Cache': 'MISS' }
+    return NextResponse.json(result, {
+      headers: { 'X-Cache': pageToken ? 'BYPASS' : 'MISS' }
     });
 
   } catch (error) {
@@ -138,18 +150,19 @@ export async function GET(req) {
 }
 
 // Fetch metadata only for the email list (much faster - no full content)
-async function fetchMetadataEmails(gmail, query = null, maxResults = 20) {
+async function fetchMetadataEmails(gmail, query = null, pageToken = null, maxResults = 20) {
   try {
     // Get list of emails IDs only
     const emailList = await gmail.users.messages.list({
       userId: 'me',
       maxResults,
+      pageToken: pageToken || undefined,
       q: query || undefined,
-      fields: 'messages(id)',
+      fields: 'messages(id),nextPageToken',
     });
 
     if (!emailList.data.messages) {
-      return [];
+      return { emails: [], nextPageToken: null };
     }
 
     // Fetch in batches of 10 (respect Gmail API rate limits)
@@ -178,7 +191,10 @@ async function fetchMetadataEmails(gmail, query = null, maxResults = 20) {
       allEmails.push(...batchEmails);
     }
     
-    return allEmails;
+    return {
+      emails: allEmails,
+      nextPageToken: emailList.data.nextPageToken || null
+    };
   } catch (error) {
     console.error('Error fetching email list:', error);
     throw error;

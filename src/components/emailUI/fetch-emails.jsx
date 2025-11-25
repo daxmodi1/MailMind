@@ -39,7 +39,51 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredEmail, setHoveredEmail] = useState(null);
+  const [pageToken, setPageToken] = useState(null);
+  const [nextPageToken, setNextPageToken] = useState(null);
+  const [pageHistory, setPageHistory] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const fetchAbortController = useRef(null);
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    console.log('🔜 Next page clicked');
+    console.log('Current state:', {
+      nextPageToken,
+      currentPageToken: pageToken,
+      pageHistoryLength: pageHistory.length,
+      currentPage
+    });
+    
+    if (nextPageToken) {
+      setPageHistory(prev => [...prev, pageToken]);
+      setPageToken(nextPageToken);
+      setCurrentPage(prev => prev + 1);
+      console.log('✅ Moving to next page');
+    } else {
+      console.log('❌ No next page token available');
+    }
+  };
+
+  const handlePreviousPage = () => {
+    console.log('🔙 Previous page clicked');
+    console.log('Current state:', {
+      pageHistoryLength: pageHistory.length,
+      currentPage
+    });
+    
+    if (pageHistory.length > 0) {
+      const newHistory = [...pageHistory];
+      const previousToken = newHistory.pop();
+      console.log('Going back to token:', previousToken);
+      setPageHistory(newHistory);
+      setPageToken(previousToken);
+      setCurrentPage(prev => prev - 1);
+      console.log('✅ Moving to previous page');
+    } else {
+      console.log('❌ Already on first page');
+    }
+  };
 
   // ✅ Custom hook for all email actions
   const {
@@ -68,17 +112,21 @@ export default function UnifiedEmailComponent({ type, subtype }) {
 
     async function fetchEmails() {
       try {
-        // Check client cache first (instant response)
-        const cachedData = getCachedEmails(queryType);
-        if (cachedData) {
-          console.log(`⚡ Client cache hit for ${queryType}`);
-          setEmails(cachedData);
-          setLoading(false);
-          return;
+        // Only check cache if on first page (no pageToken)
+        if (!pageToken) {
+          const cachedData = getCachedEmails(queryType);
+          if (cachedData) {
+            console.log(`⚡ Client cache hit for ${queryType}`);
+            const emailsData = Array.isArray(cachedData) ? cachedData : (cachedData.emails || []);
+            setEmails(emailsData);
+            setLoading(false);
+            return;
+          }
         }
 
-        console.log(`📡 Fetching from server: ${queryType}`);
-        const res = await fetch(`/api/gmail?type=${queryType}`, {
+        console.log(`📡 Fetching from server: ${queryType}, page token: ${pageToken || 'none'}`);
+        const url = `/api/gmail?type=${queryType}${pageToken ? `&pageToken=${pageToken}` : ''}`;
+        const res = await fetch(url, {
           signal: fetchAbortController.current.signal,
           cache: 'no-store',
         });
@@ -86,9 +134,28 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         
         if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
         
-        // Cache on client
-        setCachedEmails(queryType, data);
-        setEmails(data);
+        const emailsData = Array.isArray(data) ? data : (data.emails || []);
+        const newNextPageToken = data.nextPageToken || null;
+        
+        console.log('📥 Received data:', { 
+          emailCount: emailsData.length, 
+          nextPageToken: newNextPageToken,
+          hasNextToken: !!newNextPageToken,
+          dataType: Array.isArray(data) ? 'array' : 'object'
+        });
+        
+        // Only cache first page
+        if (!pageToken) {
+          setCachedEmails(queryType, emailsData);
+        }
+        setEmails(emailsData);
+        setNextPageToken(newNextPageToken);
+        
+        console.log('📊 State after update:', {
+          emailsCount: emailsData.length,
+          nextPageToken: newNextPageToken,
+          willEnableNextButton: !!newNextPageToken
+        });
       } catch (err) {
         if (err.name !== 'AbortError') {
           setError(err.message);
@@ -106,7 +173,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         fetchAbortController.current.abort();
       }
     };
-  }, [type, subtype]);
+  }, [type, subtype, pageToken]);
 
   // 🧭 Generate the correct email link
   const getEmailLink = (emailId) =>
@@ -141,8 +208,13 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       const emptyMap = new Map();
       setCachedEmails(queryType, null);
       
+      // Reset pagination
+      setPageToken(null);
+      setPageHistory([]);
+      setCurrentPage(1);
+      
       console.log(`🔄 Refreshing emails: ${queryType}`);
-      const res = await fetch(`/api/gmail?type=${queryType}`, {
+      const res = await fetch(`/api/gmail?type=${queryType}&refresh=true`, {
         // Force bypass cache
         cache: 'no-store',
       });
@@ -150,9 +222,12 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       
       if (!res.ok) throw new Error(data.error || 'Failed to fetch emails');
       
+      const emailsData = Array.isArray(data) ? data : (data.emails || []);
+      
       // Cache on client
-      setCachedEmails(queryType, data);
-      setEmails(data);
+      setCachedEmails(queryType, emailsData);
+      setEmails(emailsData);
+      setNextPageToken(data.nextPageToken || null);
       console.log(`✓ Refresh complete`);
     } catch (err) {
       setError(err.message);
@@ -180,7 +255,19 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       </div>
     );
 
-  // 📩 Main UI
+  // 📩 Main UI - Log pagination state before render
+  const hasNextPage = !!nextPageToken;
+  const hasPreviousPage = pageHistory.length > 0;
+  
+  console.log('🎨 Rendering with pagination state:', { 
+    hasNextPage,
+    hasPreviousPage,
+    nextPageToken,
+    pageHistoryLength: pageHistory.length,
+    currentPage,
+    emailsCount: emails.length
+  });
+
   return (
     <div className="flex flex-col h-full bg-white">
       {(type === 'spam' || type == 'bin' || type == 'trash') && <AutoDeleteBadge folderType={type} />}
@@ -196,6 +283,10 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         selectedEmails={selectedEmails}
         emails={emails}
         onRefresh={handleRefresh}
+        onNextPage={handleNextPage}
+        onPreviousPage={handlePreviousPage}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
       />
 
       <div className="flex-1 overflow-auto">
@@ -288,7 +379,8 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                           >
                             <Trash2 className="w-4 h-4 text-gray-600" />
                           </button>
-                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read">
+                          <button className="p-1 hover:bg-gray-200 rounded" title="Mark as read"
+                            onClick={(e) => markAsRead(email.id, setEmails)}>
                             <MailOpen className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>

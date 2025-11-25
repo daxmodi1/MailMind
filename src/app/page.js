@@ -10,6 +10,7 @@ export default function Home() {
   return (
     <div className="font-main">
       <section
+        id="home"
         className="md:min-h-screen bg-cover repeat-0"
         style={{ backgroundImage: "url('/bg/bg.png')" }}
       >
@@ -20,6 +21,7 @@ export default function Home() {
         className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
+        id="about"
         className="md:min-h-screen bg-center bg-cover repeat-0"
         style={{ backgroundImage: "url('/bg/bg2.png')" }}
       >
@@ -29,6 +31,7 @@ export default function Home() {
         className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
+        id="features"
         className="min-h-screen bg-cover bg-center repeat-0"
         style={{ backgroundImage: "url('/bg/bg3.png')" }}
       >
@@ -38,6 +41,7 @@ export default function Home() {
         className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
+        id="features2"
         className="min-h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/bg/bg4.png')" }}
       >
@@ -47,6 +51,7 @@ export default function Home() {
         className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
+        id="pricing"
         className="min-h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/bg/bg4.png')" }}
       >
@@ -56,6 +61,7 @@ export default function Home() {
         className="w-full h-13 backdrop-blur-md bg-white/10 -my-8 relative z-10"
       />
       <section
+        id="faq"
         className="min-h-screen bg-cover bg-center"
         style={{ backgroundImage: "url('/bg/bg4.png')" }}
       >

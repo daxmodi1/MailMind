@@ -19,22 +19,21 @@ import { NavSecondary } from "./navSecondary"
 import { NavMain } from "@/components/dashboardUI/navMain"
 import { SearchForm } from "./searchForm"
 import { cn } from "@/lib/utils"
-
+import { LuMails } from "react-icons/lu";
 // All email navigation items combined
 const AllEmailItems = [
   {
     title: "Inbox",
     url: "/dashboard/inbox",
     icon: Inbox,
-    isActive: true,
     items: [
-      {
-        title: "All Messages",
-        url: "/dashboard/inbox/all",
-      },
       {
         title: "Unread",
         url: "/dashboard/inbox/unread",
+      },
+      {
+        title: "All Messages",
+        url: "/dashboard/inbox/all",
       },
       {
         title: "Done",
@@ -88,9 +87,9 @@ const AppSideBarHeader = ({ state }) => {
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton asChild>
-          <Link href="/" className={cn(state == "expanded" ? "py-6" : "py-0")}>
-            <Image src="/logo.png" alt="logo" width={36} height={36} />
-            <span className="font-main font-semibold text-xl">Mailorant</span>
+          <Link href="/" className={cn(state == "expanded" ? "py-6" : "")}>
+            <Image src="/logo.png" alt="logo" width={34} height={34} />
+            <span className="font-main font-semibold text-xl">Mailmind</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

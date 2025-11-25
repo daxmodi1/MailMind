@@ -89,9 +89,12 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="hover:bg-destructive hover:text-white">
-              <button onClick={() => signOut({ callbackUrl: '/login' })}>
-                <LogOut className="mr-2" />
+            <DropdownMenuItem asChild>
+              <button 
+                onClick={() => signOut({ callbackUrl: '/login' })} 
+                className="w-full flex items-center cursor-pointer text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </button>
             </DropdownMenuItem>
