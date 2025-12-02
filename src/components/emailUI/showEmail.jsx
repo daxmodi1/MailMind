@@ -248,12 +248,17 @@ export default function ShowEmailViaID({ page }) {
         })
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to summarize email');
+        if (data.premiumRequired) {
+          setSummaryError('🔒 ' + data.error);
+        } else {
+          throw new Error(data.error || 'Failed to summarize email');
+        }
+        return;
       }
 
-      const data = await response.json();
       setSummary(data.summary);
     } catch (err) {
       setSummaryError(err.message);

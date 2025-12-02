@@ -40,6 +40,18 @@ export async function POST(req) {
     } catch (error) {
         console.error("❌ Summarization error:", error)
         
+        // Check if this is a premium requirement error
+        if (error.message && error.message.startsWith('PREMIUM_REQUIRED:')) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "This email is too long to summarize. Please upgrade to Premium to summarize longer emails.",
+                    premiumRequired: true
+                },
+                { status: 403 }
+            )
+        }
+        
         return NextResponse.json(
             {
                 success: false,
