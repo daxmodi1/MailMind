@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: 'Login',
+  description: 'Sign in to your MailMind account',
+};
+
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
   

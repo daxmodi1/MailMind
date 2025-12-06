@@ -1,8 +1,15 @@
-'use client'
-
 import "./globals.css";
 import localFont from 'next/font/local';
-import { SessionProvider } from "next-auth/react";
+import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
+
+export const metadata = {
+  title: {
+    default: 'MailMind - Smart Email Management',
+    template: '%s | MailMind'
+  },
+  description: 'MailMind - AI-powered email management with smart summaries, intelligent search, and seamless Gmail integration.',
+};
+
 const Linotype = localFont({
   src: './fonts/Linotype-Didot-Italic.otf',
   display: 'swap',
@@ -32,9 +39,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${Linotype.variable} ${RFDewi.className}`}>
       <body className="*:m-0 *:p-0">
-        <SessionProvider>
+        <SessionProviderWrapper>
           {children}
-        </SessionProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

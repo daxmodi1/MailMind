@@ -39,10 +39,10 @@ export default function About() {
     { text: "that ", 
       className: "text-3xl md:text-5xl lg:text-6xl"
     },
-    { text: "makes ",
+    { text: "saves ",
       className: "text-3xl md:text-5xl lg:text-6xl"
      },
-    { text: "communication ",
+    { text: "hours ",
       className: "text-3xl md:text-5xl lg:text-6xl"
      },
   ];
@@ -53,7 +53,7 @@ export default function About() {
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-y-5">
 
         <RainbowButton className="rounded-full px-6 py-2">
-          About us
+          About MailMind
         </RainbowButton>
 
         <div className="w-full">
@@ -64,15 +64,15 @@ export default function About() {
             }
           >
             <h2 className="text-3xl md:text-5xl lg:text-6xl text-primary leading-tight">
-              <div>We provide a <PointerHighlight
+              <div>We built an <PointerHighlight
                 rectangleClassName="bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 leading-loose"
                 pointerClassName="text-blue-500"
                 containerClassName="inline-block mx-1"
               >
-                <span className="relative z-10">powerful </span>
+                <span className="relative z-10">AI-powered </span>
               </PointerHighlight></div>
 
-              <div className="font-bold italic">Email management <span className="font-medium not-italic">solution</span></div>
+              <div className="font-bold italic">Gmail companion <span className="font-medium not-italic">app</span></div>
 
               <div>
                 <TypewriterEffectSmooth words={words} />
@@ -84,15 +84,15 @@ export default function About() {
                   pointerClassName="text-blue-500"
                   containerClassName="inline-block mx-1"
                 >
-                  <span className="relative z-10">effortless, </span>
-                  <span className="not-italic relative z-10">secure</span>
+                  <span className="relative z-10">every week </span>
+                  <span className="not-italic relative z-10">on email</span>
                 </PointerHighlight>
-                <span className="font-medium not-italic"> and</span>
+                <span className="font-medium not-italic"> by</span>
               </div>
 
-              <div>optimized for <span className="font-bold italic">your</span></div>
+              <div>summarizing what <span className="font-bold italic">matters</span></div>
 
-              <div className="font-bold">workflow</div>
+              <div className="font-bold">most to you</div>
             </h2>
           </FollowerPointerCard>
         </div>

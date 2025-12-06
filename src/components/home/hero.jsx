@@ -12,10 +12,10 @@ export default function Hero() {
       <div className="bg-white shadow-md rounded-full p-1 mt-15">
         <div className="inline-flex items-center bg-[#F1F5F9] rounded-full p-1 gap-2 border">
           <div className="bg-[#DEE3F9] text-[#5B71F9] rounded-full px-2 sm:py-0 md:py-1 text-xs sm:text-sm font-bold shadow-sm">
-            New
+            AI-Powered
           </div>
           <div className="text-zinc-600 text-xs sm:text-sm font-semibold sm:block">
-            Upgrade your workflow today
+            Smart email summaries with one click
           </div>
           <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-600 mr-1 mt-0.5" />
         </div>
@@ -24,16 +24,16 @@ export default function Hero() {
       {/* Main Heading */}
       <div className="text-center text-4xl md:text-5xl lg:text-6xl">
         <h1 className="font-main font-bold text-primary leading-tight">
-          Effortless Email Management
+          Your Gmail, Supercharged
         </h1>
         <h2 className="font-linotype text-primary mt-2">
-          Maximum Efficiency
+          with AI Intelligence
         </h2>
       </div>
 
       {/* Subtitle */}
       <div className="text-primary text-base sm:text-lg lg:text-xl text-center max-w-2xl px-4">
-        Streamline your emails with a smart, intuitive, and clutter-free experience
+        MailMind connects to your Gmail and uses AI to summarize emails, highlight what matters, and help you respond faster
       </div>
 
       {/* CTA Buttons */}

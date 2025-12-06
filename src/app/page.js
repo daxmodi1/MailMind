@@ -6,6 +6,11 @@ import Features2 from "@/components/home/features-2"
 import Pricing from "@/components/home/pricing";
 import Faq from "@/components/home/faq";
 import Footer from "@/components/home/footer";
+
+export const metadata = {
+  title: 'MailMind - Smart Email Management',
+  description: 'AI-powered email management with smart summaries and intelligent search.',
+};
 export default function Home() {
   return (
     <div className="font-main">

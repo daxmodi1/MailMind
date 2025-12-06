@@ -5,18 +5,15 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   EmailStatsChart, 
-  processEmailsToDaily, 
-  processEmailsToWeekly,
-  demoDailyData,
-  demoWeeklyData 
+  processEmailsToDaily 
 } from '@/components/dashboardUI/EmailStatsChart';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [emails, setEmails] = useState([]);
-  const [dailyData, setDailyData] = useState(demoDailyData);
-  const [weeklyData, setWeeklyData] = useState(demoWeeklyData);
+  const [dailyData, setDailyData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,21 +41,43 @@ export default function Dashboard() {
       return;
     }
 
-    // Fetch emails for chart data
+    // Fetch emails for chart data (both inbox and sent)
     const fetchEmails = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/gmail?maxResults=100');
-        if (response.ok) {
-          const data = await response.json();
-          const emailList = data.emails || [];
-          setEmails(emailList);
-          
-          // Process emails into chart data
-          if (emailList.length > 0) {
-            setDailyData(processEmailsToDaily(emailList));
-            setWeeklyData(processEmailsToWeekly(emailList));
-          }
+        
+        // Fetch both inbox and sent emails in parallel
+        const [inboxResponse, sentResponse] = await Promise.all([
+          fetch('/api/gmail?type=inbox&maxResults=100'),
+          fetch('/api/gmail?type=sent&maxResults=100')
+        ]);
+        
+        let allEmails = [];
+        
+        if (inboxResponse.ok) {
+          const inboxData = await inboxResponse.json();
+          const inboxEmails = (inboxData.emails || inboxData || []).map(email => ({
+            ...email,
+            _type: 'received'
+          }));
+          allEmails = [...allEmails, ...inboxEmails];
+        }
+        
+        if (sentResponse.ok) {
+          const sentData = await sentResponse.json();
+          const sentEmails = (sentData.emails || sentData || []).map(email => ({
+            ...email,
+            labelIds: [...(email.labelIds || []), 'SENT'],
+            _type: 'sent'
+          }));
+          allEmails = [...allEmails, ...sentEmails];
+        }
+        
+        setEmails(allEmails.filter(e => e._type === 'received').slice(0, 10));
+        
+        // Process all emails into chart data
+        if (allEmails.length > 0) {
+          setDailyData(processEmailsToDaily(allEmails));
         }
       } catch (error) {
         console.error('Failed to fetch emails for stats:', error);
@@ -76,8 +95,8 @@ export default function Dashboard() {
   // Loading state
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg">Loading...</p>
+      <div className="flex items-center justify-center h-full w-full">
+        <Spinner className="size-8" />
       </div>
     );
   }
@@ -96,26 +115,32 @@ export default function Dashboard() {
         </h1>
       </div>
 
-      {/* Email Statistics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <EmailStatsChart 
-          data={dailyData} 
-          title="Daily Email Activity" 
-          description="Your email activity for the last 7 days"
-          timeRange="daily"
-        />
-        <EmailStatsChart 
-          data={weeklyData} 
-          title="Weekly Email Activity" 
-          description="Your email activity for the last 4 weeks"
-          timeRange="weekly"
-        />
+      {/* Email Statistics Chart */}
+      <div className="mb-8">
+        {loading ? (
+          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-6 h-[380px] flex items-center justify-center">
+            <Spinner className="size-8" />
+          </div>
+        ) : dailyData ? (
+          <EmailStatsChart 
+            data={dailyData} 
+            title="Daily Email Activity" 
+            description="Your email activity for the last 7 days"
+            timeRange="daily"
+          />
+        ) : (
+          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-6 h-[380px] flex items-center justify-center text-gray-500">
+            No email activity data available
+          </div>
+        )}
       </div>
 
       <div className="bg-white dark:bg-neutral-900 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Recent Emails</h2>
         {loading ? (
-          <p className="text-gray-500">Loading emails...</p>
+          <div className="flex justify-center items-center py-8">
+            <Spinner className="size-6" />
+          </div>
         ) : emails.length === 0 ? (
           <p className="text-gray-500">No emails to display</p>
         ) : (
@@ -123,8 +148,8 @@ export default function Dashboard() {
             {emails.slice(0, 10).map((email, index) => (
               <li 
                 key={email.id || index} 
-                className="border-b pb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800 p-2 rounded-md transition-colors"
-                onClick={() => router.push(`/dashboard/inbox?emailId=${email.id}`)}
+                className="border-b pb-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 p-2 rounded-md transition-colors"
+                onClick={() => router.push(`/dashboard/inbox/${email.id}`)}
               >
                 <span className="font-medium">{email.subject || 'No subject'}</span>
                 <span className="text-gray-500 text-sm ml-2">from {email.from}</span>

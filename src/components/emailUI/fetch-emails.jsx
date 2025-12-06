@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import EmailNav from './emailNav';
-import { Star, Archive, Trash2, MailOpen } from 'lucide-react';
+import { Star, Archive, Trash2, MailOpen, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 import { decodeHtmlEntities, formatDate, extractSenderName } from '@/lib/helprEmails';
 import { useEmailActions } from '@/lib/useEmailActions';
 import { AutoDeleteBadge } from './warningBadge';
+import { useSearch } from '@/lib/searchContext';
 
 import { getCachedEmails, setCachedEmails } from '@/lib/emailCache';
 
@@ -35,8 +36,14 @@ export function updateCachedEmailStatus(emailId, operation) {
 }
 
 export default function UnifiedEmailComponent({ type, subtype }) {
+  const queryType = subtype || type;
+  
+  // Track the previous type using ref (doesn't cause re-renders)
+  const prevQueryTypeRef = useRef(queryType);
+  
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredEmail, setHoveredEmail] = useState(null);
   const [pageToken, setPageToken] = useState(null);
@@ -44,6 +51,9 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   const [pageHistory, setPageHistory] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const fetchAbortController = useRef(null);
+  
+  // Search context
+  const { searchResults, isSearching, isSearchActive, searchQuery, clearSearch } = useSearch();
 
   // Pagination handlers
   const handleNextPage = () => {
@@ -100,9 +110,13 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     markSelectedAsUnread,
   } = useEmailActions(type, subtype);
 
-  // 🔄 Fetch emails with client-side caching
+  // 🔄 Fetch emails - only runs when we need to fetch from server
   useEffect(() => {
-    const queryType = subtype || type;
+    const currentQueryType = subtype || type;
+    const typeChanged = prevQueryTypeRef.current !== currentQueryType;
+    
+    // Update ref for next render
+    prevQueryTypeRef.current = currentQueryType;
     
     // Cancel previous request if still pending
     if (fetchAbortController.current) {
@@ -110,22 +124,38 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     }
     fetchAbortController.current = new AbortController();
 
+    // Reset pagination on type change
+    if (typeChanged) {
+      setPageToken(null);
+      setPageHistory([]);
+      setCurrentPage(1);
+      setError(null);
+    }
+
+    // Check cache first (for first page only)
+    if (!pageToken) {
+      const cachedData = getCachedEmails(currentQueryType);
+      if (cachedData) {
+        console.log(`⚡ Client cache hit for ${currentQueryType}`);
+        const emailsData = Array.isArray(cachedData) ? cachedData : (cachedData.emails || []);
+        setEmails(emailsData);
+        setLoading(false);
+        setInitialLoad(false);
+        return; // Don't fetch, use cached data
+      }
+    }
+    
+    // No cache - show loading and fetch
+    setLoading(true);
+    if (typeChanged) {
+      setEmails([]);
+      setInitialLoad(true);
+    }
+
     async function fetchEmails() {
       try {
-        // Only check cache if on first page (no pageToken)
-        if (!pageToken) {
-          const cachedData = getCachedEmails(queryType);
-          if (cachedData) {
-            console.log(`⚡ Client cache hit for ${queryType}`);
-            const emailsData = Array.isArray(cachedData) ? cachedData : (cachedData.emails || []);
-            setEmails(emailsData);
-            setLoading(false);
-            return;
-          }
-        }
-
-        console.log(`📡 Fetching from server: ${queryType}, page token: ${pageToken || 'none'}`);
-        const url = `/api/gmail?type=${queryType}${pageToken ? `&pageToken=${pageToken}` : ''}`;
+        console.log(`📡 Fetching from server: ${currentQueryType}, page token: ${pageToken || 'none'}`);
+        const url = `/api/gmail?type=${currentQueryType}${pageToken ? `&pageToken=${pageToken}` : ''}`;
         const res = await fetch(url, {
           signal: fetchAbortController.current.signal,
           cache: 'no-store',
@@ -146,7 +176,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         
         // Only cache first page
         if (!pageToken) {
-          setCachedEmails(queryType, emailsData);
+          setCachedEmails(currentQueryType, emailsData);
         }
         setEmails(emailsData);
         setNextPageToken(newNextPageToken);
@@ -162,6 +192,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         }
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     }
     
@@ -176,8 +207,13 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   }, [type, subtype, pageToken]);
 
   // 🧭 Generate the correct email link
-  const getEmailLink = (emailId) =>
-    subtype ? `/dashboard/${type}/${subtype}/${emailId}` : `/dashboard/${type}/${emailId}`;
+  const getEmailLink = (emailId) => {
+    // For search results, use inbox as default view
+    if (isSearchActive) {
+      return `/dashboard/inbox/${emailId}`;
+    }
+    return subtype ? `/dashboard/${type}/${subtype}/${emailId}` : `/dashboard/${type}/${emailId}`;
+  };
 
   // 🚀 Prefetch email on hover (loads full content in background)
   const prefetchEmailOnHover = async (emailId) => {
@@ -238,19 +274,34 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   };
 
   const displayName = subtype || type;
-
-  // 🌀 Loading State
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-full w-full">
-        <Spinner className="size-8" />
-      </div>
+  
+  // Determine which emails to display - search results or regular emails
+  const displayEmails = isSearchActive ? searchResults : emails;
+  const showSearchHeader = isSearchActive;
+  
+  // Helper function to highlight search matches
+  const highlightText = (text, query) => {
+    if (!isSearchActive || !query || !text) return text;
+    
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <mark key={index} className="bg-yellow-200 dark:bg-yellow-500/40 px-0.5 rounded-sm">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
     );
+  };
 
   // ❌ Error State
   if (error)
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-full w-full">
         <div className="text-red-500 text-lg">Error: {error}</div>
       </div>
     );
@@ -269,8 +320,29 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   });
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {(type === 'spam' || type == 'bin' || type == 'trash') && <AutoDeleteBadge folderType={type} />}
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-950">
+      {/* Search Header */}
+      {showSearchHeader && (
+        <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border-b">
+          <div className="flex items-center gap-2">
+            <Search className="size-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+              Search results for "{searchQuery}"
+            </span>
+            <span className="text-xs text-blue-600 dark:text-blue-400">
+              ({isSearching ? 'Searching...' : `${searchResults.length} found`})
+            </span>
+          </div>
+          <button
+            onClick={clearSearch}
+            className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-md transition-colors text-blue-600 dark:text-blue-400"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+      
+      {(type === 'spam' || type == 'bin' || type == 'trash') && !isSearchActive && <AutoDeleteBadge folderType={type} />}
       <EmailNav
         selectedCount={selectedEmails.size}
         totalCount={emails.length}
@@ -290,14 +362,32 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       />
 
       <div className="flex-1 overflow-auto">
-        {emails.length === 0 ? (
+        {(loading || initialLoad) && !isSearchActive ? (
+          <div className="flex justify-center items-center h-full w-full">
+            <Spinner className="size-8" />
+          </div>
+        ) : isSearching ? (
+          <div className="flex justify-center items-center h-full w-full">
+            <Spinner className="size-8" />
+          </div>
+        ) : displayEmails.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
-            <div className="text-lg mb-2">No {displayName} emails found</div>
-            <div className="text-sm">Your {displayName} folder is empty</div>
+            {isSearchActive ? (
+              <>
+                <Search className="size-12 mx-auto mb-4 opacity-50" />
+                <div className="text-lg mb-2">No emails found for "{searchQuery}"</div>
+                <div className="text-sm">Try a different search term</div>
+              </>
+            ) : (
+              <>
+                <div className="text-lg mb-2">No {displayName} emails found</div>
+                <div className="text-sm">Your {displayName} folder is empty</div>
+              </>
+            )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {emails.map((email) => {
+          <div className="divide-y divide-gray-200 dark:divide-neutral-800">
+            {displayEmails.map((email) => {
               const isSelected = selectedEmails.has(email.id);
               const isHovered = hoveredEmail === email.id;
               const isUnread = email.labelIds?.includes('UNREAD');
@@ -341,7 +431,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                           isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
                         )}
                       >
-                        {decodeHtmlEntities(extractSenderName(email.from))}
+                        {highlightText(decodeHtmlEntities(extractSenderName(email.from)), searchQuery)}
                       </span>
                     </div>
 
@@ -353,10 +443,10 @@ export default function UnifiedEmailComponent({ type, subtype }) {
                             isUnread ? 'font-bold text-black' : 'font-normal text-gray-700'
                           )}
                         >
-                          {decodeHtmlEntities(email.subject) || '(no subject)'}
+                          {highlightText(decodeHtmlEntities(email.subject) || '(no subject)', searchQuery)}
                         </span>
                         <span className="text-gray-600 ml-2">
-                          - {decodeHtmlEntities(email.previewText || email.snippet || '')}
+                          - {highlightText(decodeHtmlEntities(email.previewText || email.snippet || ''), searchQuery)}
                         </span>
                       </div>
                     </div>

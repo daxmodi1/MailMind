@@ -7,16 +7,16 @@ export default function Features2() {
       <div className="flex flex-col md:flex-row w-full max-w-6xl items-center justify-between gap-10">
 
         <div className="text-3xl md:text-5xl text-primary font-semibold text-center md:text-left">
-          <div>Seamless Integration</div>
-          <div>for a Smarter Workflow</div>
+          <div>Works with Gmail</div>
+          <div>You Already Use</div>
         </div>
 
         <div className="text-center md:text-left">
           <div className="text-lg md:text-xl text-muted-foreground mb-5">
-            <div>Connect MailMind with your favorite tools</div>
-            <div>and boost productivity effortlessly</div>
+            <div>No migration needed. Connect your existing</div>
+            <div>Gmail in seconds and start working smarter</div>
           </div>
-          <CustomButton>Explore Integrations</CustomButton>
+          <CustomButton>Get Started Free</CustomButton>
         </div>
       </div>
       <FloatingIconsDemo />

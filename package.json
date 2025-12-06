@@ -1,6 +1,29 @@
 {
   "name": "mailmind",
   "version": "0.1.0",
+  "description": "AI-powered Gmail client with smart email summaries and intelligent search",
+  "author": "Dax Modi <daxmodi@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DaxModi/MailMind.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DaxModi/MailMind/issues"
+  },
+  "homepage": "https://github.com/DaxModi/MailMind#readme",
+  "keywords": [
+    "gmail",
+    "email",
+    "ai",
+    "nextjs",
+    "react",
+    "tailwindcss",
+    "email-client",
+    "productivity",
+    "llm",
+    "groq"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

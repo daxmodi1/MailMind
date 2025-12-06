@@ -27,7 +27,7 @@ export default function Features() {
       </h1>
 
       <p className="text-muted-foreground font-semibold text-center text-lg mb-10 w-99 md:w-150 lg:w-170">
-        Manage your emails faster, more securely, and efficiently with intelligent features designed for maximum productivity.
+        MailMind supercharges your Gmail with AI-powered features that save hours every week.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto w-full">
@@ -35,36 +35,36 @@ export default function Features() {
         {[
           {
             src: '/mail.svg',
-            title: 'Smart Inbox Management',
-            desc: 'Prioritize important emails with an intelligent filtering system that keeps your inbox clean and distraction-free.',
-            alt: 'Smart Inbox Management',
+            title: 'AI Email Summaries',
+            desc: 'Get instant AI-generated summaries of long emails. Understand the key points in seconds without reading walls of text.',
+            alt: 'AI Email Summaries',
           },
           {
             src: '/calander.svg',
-            title: 'Effortless Email Organization',
+            title: 'Smart Search & Filters',
             desc: [
-              'Easily manage and archive emails with an intuitive folder',
-              'and tagging system.',
+              'Find any email instantly with intelligent search that',
+              'understands context, not just keywords.',
             ],
-            alt: 'Email Organization',
+            alt: 'Smart Search',
           },
           {
             src: '/file.svg',
-            title: 'Seamless Attachment Handling',
+            title: 'Seamless Gmail Integration',
             desc: [
-              'Send, receive, and organize attachments effortlessly,',
-              'ensuring all your important files are always within reach.',
+              'One-click connection to your Gmail account.',
+              'All your emails, labels, and folders sync automatically.',
             ],
-            alt: 'Attachment Handling',
+            alt: 'Gmail Integration',
           },
           {
             src: '/security.svg',
-            title: 'Top-Tier Security & Privacy',
+            title: 'Privacy-First Design',
             desc: [
-              'Protect your emails with advanced encryption and robust',
-              'privacy safeguards.',
+              'Your emails stay private. We use secure OAuth and',
+              'never store your email content on our servers.',
             ],
-            alt: 'Security & Privacy',
+            alt: 'Privacy & Security',
           },
         ].map((feature, idx) => (
           <div

@@ -1,7 +1,8 @@
-export default function Index() {
+'use client';
+import FetchEmails from '@/components/emailUI/fetch-emails';
+
+export default function InboxPage() {
   return (
-    <div className="p-4">
-      Index default will appear
-    </div>
-  )
+    <FetchEmails type="inbox" />
+  );
 }

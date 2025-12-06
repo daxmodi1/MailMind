@@ -71,12 +71,12 @@ const AllEmailItems = [
 const BottomItems = [
   {
     title: "Settings",
-    url: "/dashboard/settings",
+    url: "/coming-soon",
     icon: Settings,
   },
   {
     title: "Help Center",
-    url: "/dashboard/help",
+    url: "/coming-soon",
     icon: Headphones,
   },
 ]

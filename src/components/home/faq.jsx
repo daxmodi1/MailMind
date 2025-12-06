@@ -6,24 +6,24 @@ const Faq = () => {
   const [openIndex, setOpenIndex] = React.useState(null)
   const faqsData = [
     {
-      question: 'Lightning-Fast Performance',
-      answer: 'Built with speed — minimal load times and optimized rendering.'
+      question: 'How does MailMind connect to my Gmail?',
+      answer: 'MailMind uses secure OAuth authentication provided by Google. We never see or store your password — you simply authorize access through Google\'s official login flow.'
     },
     {
-      question: 'Fully Customizable Components',
-      answer: 'Easily adjust styles, structure, and behavior to match your project needs.'
+      question: 'Is my email data safe and private?',
+      answer: 'Absolutely. Your emails are processed securely and we don\'t store email content on our servers. AI summaries are generated on-demand and not retained.'
     },
     {
-      question: 'Responsive by Default',
-      answer: 'Every component are responsive by default — no extra CSS required.'
+      question: 'What does the AI summarization do?',
+      answer: 'Our AI reads your emails and generates concise summaries highlighting key points, action items, and important details — saving you time on lengthy emails.'
     },
     {
-      question: 'Tailwind CSS Powered',
-      answer: 'Built using Tailwind utility classes — no extra CSS or frameworks required.'
+      question: 'Can I use MailMind with multiple Gmail accounts?',
+      answer: 'The Free plan supports one Gmail account. Upgrade to Pro for unlimited accounts and advanced features across all your inboxes.'
     },
     {
-      question: 'Dark Mode Support',
-      answer: 'All components come ready with light and dark theme support out of the box.'
+      question: 'Does MailMind work on mobile devices?',
+      answer: 'Yes! MailMind is fully responsive and works seamlessly on desktop, tablet, and mobile browsers.'
     }
   ]
   return (

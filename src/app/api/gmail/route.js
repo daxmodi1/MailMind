@@ -68,9 +68,10 @@ export async function GET(req) {
 
     const type = new URL(req.url).searchParams.get("type") || "inbox";
     const pageToken = new URL(req.url).searchParams.get("pageToken") || null;
+    const searchQuery = new URL(req.url).searchParams.get("q") || null;
     const refresh = new URL(req.url).searchParams.get("refresh") === "true";
     const userId = session.user.id || session.user.email;
-    const cacheKey = getCacheKey(userId, `${type}:${pageToken || 'first'}`);
+    const cacheKey = getCacheKey(userId, `${type}:${pageToken || 'first'}${searchQuery ? `:${searchQuery}` : ''}`);
 
     // Clear server cache if refresh requested
     if (refresh) {
@@ -92,6 +93,13 @@ export async function GET(req) {
 
     let result = {};
     switch (type) {
+      case "search":
+        if (searchQuery) {
+          result = await fetchMetadataEmails(gmail, searchQuery, pageToken);
+        } else {
+          result = { emails: [], nextPageToken: null };
+        }
+        break;
       case "inbox":
         result = await fetchMetadataEmails(gmail, "in:inbox", pageToken);
         break;
