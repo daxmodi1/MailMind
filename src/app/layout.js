@@ -27,7 +27,7 @@ const RFDewi = localFont({
       weight: '700',
     },
     {
-      path: './fonts/RFDewi-SemiBold.woff',
+      path: './fonts/RFDewi-Semibold.woff',
       weight: '600',
     },
   ],
