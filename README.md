@@ -21,6 +21,7 @@
 - [About](#-about)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
 - [Project Structure](#-project-structure)
@@ -88,6 +89,24 @@ MailMind is an AI-powered Gmail client that helps you manage your inbox more eff
 ### Icons & Assets
 - **[Lucide Icons](https://lucide.dev/)** - Beautiful icons
 - **[React Icons](https://react-icons.github.io/react-icons/)** - Icon library
+
+---
+
+## 🏗️ Architecture
+
+### System Architecture
+
+<div align="center">
+  <img src="public/architecture.png" alt="MailMind Architecture" width="800" />
+  <p><em>High-level system architecture showing component interactions</em></p>
+</div>
+
+### Data Flow
+
+<div align="center">
+  <img src="public/data_flow.png" alt="MailMind Data Flow" width="800" />
+  <p><em>Data flow diagram showing how emails and AI requests are processed</em></p>
+</div>
 
 ---
 
