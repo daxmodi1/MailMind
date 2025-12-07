@@ -271,7 +271,7 @@ MailMind/
 ### 🖥️ Desktop Experience
 
 <div align="center">
-  <img src="https://ibb.co/vv1SDF3G" alt="MailMind Dashboard" width="800" />
+  <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/dashboard.png" alt="MailMind Dashboard" width="800" />
   <p><em>MailMind Dashboard - AI-powered email management with smart summaries and analytics</em></p>
 </div>
 
