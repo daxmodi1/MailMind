@@ -24,8 +24,8 @@ export default function Footer() {
           <Link href="/">Home</Link>
           <Link href="/">Features</Link>
           <Link href="/">Pricing</Link>
-          <Link href="/">FAQ</Link>
-          <Link href="/">Blog</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
         </div>
 
         {/* Social icons */}

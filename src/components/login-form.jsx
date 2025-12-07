@@ -55,8 +55,10 @@ export function LoginForm({
         </FieldGroup>
       </form>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        By clicking continue, you agree to our{" "}
+        <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a>{" "}
+        and{" "}
+        <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
       </FieldDescription>
     </div>
   );
