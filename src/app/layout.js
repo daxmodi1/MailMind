@@ -1,6 +1,7 @@
 import "./globals.css";
 import localFont from 'next/font/local';
 import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
+import { AlertProvider } from "@/components/providers/AlertProvider";
 
 export const metadata = {
   title: {
@@ -40,7 +41,9 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${Linotype.variable} ${RFDewi.className}`}>
       <body className="*:m-0 *:p-0">
         <SessionProviderWrapper>
-          {children}
+          <AlertProvider>
+            {children}
+          </AlertProvider>
         </SessionProviderWrapper>
       </body>
     </html>

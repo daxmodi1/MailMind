@@ -1,6 +1,7 @@
 'use client'
 import { useCallback } from 'react'
 import { $getRoot, $generateHtmlFromNodes } from "./import"
+import { useAlert } from '@/components/providers/AlertProvider'
 
 export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, attachments, isConfidential, confidentialData) => {
   const saveDraft = useCallback(async () => {
@@ -90,6 +91,8 @@ export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, atta
 }
 
 export const useEmailSending = (onToggle, resetForm) => {
+  const { showSuccess, showError } = useAlert()
+  
   const sendEmailViaAPI = useCallback(async (emailData) => {
     try {
       const response = await fetch('/api/send-email', {
@@ -101,21 +104,25 @@ export const useEmailSending = (onToggle, resetForm) => {
 
       if (!response.ok) {
         console.error('Email send error response:', result)
-        throw new Error(result.error || `Email sending failed: ${response.statusText}`)
+        const errorMessage = result.error || `Email sending failed: ${response.statusText}`
+        showError(errorMessage)
+        throw new Error(errorMessage)
       }
 
       console.log('Email sent successfully:', result)
-      alert(`Email sent successfully with ID: ${result.messageId}`)
+      showSuccess(`Email sent successfully! Message ID: ${result.messageId}`)
       resetForm()
       onToggle?.()
       return result
 
     } catch (error) {
       console.error('Error sending email:', error)
-      alert(`Failed to send email: ${error.message}`)
+      if (!error.message.includes('Email sending failed:')) {
+        showError(`Failed to send email: ${error.message}`)
+      }
       throw error
     }
-  }, [onToggle, resetForm])
+  }, [onToggle, resetForm, showSuccess, showError])
 
   return { sendEmailViaAPI }
 }

@@ -1,5 +1,6 @@
 'use client'
 import { useCallback } from 'react'
+import { useAlert } from '@/components/providers/AlertProvider'
 
 export const useToggleHandlers = (setIsMinimized, setIsMaximized, setShowCC, setShowBCC, setShowFormatting) => {
   const toggleMinimized = useCallback(() => {
@@ -42,18 +43,20 @@ export const useAttachmentHandlers = (fileInputRef, setAttachments) => {
 }
 
 export const useDraftHandlers = (saveDraft, resetForm, setShowDraftDialog, setShowHelpDialog, setPendingAction, onToggle) => {
+  const { showSuccess, showError } = useAlert()
+  
   const handleSaveDraft = useCallback(async () => {
     const savedDraft = await saveDraft()
     if (savedDraft) {
-      alert('Draft saved successfully!')
+      showSuccess('Draft saved successfully!')
       setShowDraftDialog(false)
       resetForm()
       setPendingAction(null)
       onToggle?.()
     } else {
-      alert('Failed to save draft. Please try again.')
+      showError('Failed to save draft. Please try again.')
     }
-  }, [saveDraft, resetForm, setShowDraftDialog, setPendingAction, onToggle])
+  }, [saveDraft, resetForm, setShowDraftDialog, setPendingAction, onToggle, showSuccess, showError])
 
   const handleDiscardDraft = useCallback(() => {
     setShowDraftDialog(false)
@@ -66,10 +69,12 @@ export const useDraftHandlers = (saveDraft, resetForm, setShowDraftDialog, setSh
 }
 
 export const useSendHandlers = (editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI, validateAndPrepareEmail) => {
+  const { showError } = useAlert()
+  
   const handleSend = useCallback(async () => {
     try {
       if (!editorInstance) {
-        alert('Editor not ready')
+        showError('Editor not ready')
         return
       }
 
@@ -85,10 +90,10 @@ export const useSendHandlers = (editorInstance, to, subject, cc, bcc, attachment
 
       await sendEmailViaAPI(emailData)
     } catch (error) {
-      alert(error.message)
+      showError(error.message)
       console.error('Error sending email:', error)
     }
-  }, [editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI, validateAndPrepareEmail])
+  }, [editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI, validateAndPrepareEmail, showError])
 
   return { handleSend }
 }

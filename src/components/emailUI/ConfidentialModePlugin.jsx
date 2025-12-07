@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { MdLockClock } from "@/lib/Icon-utils"
+import { useAlert } from "@/components/providers/AlertProvider"
 export function ConfidentialModeComponent({ onToggle }) {
+  const { showError } = useAlert()
   const [isConfidential, setIsConfidential] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [expiryOption, setExpiryOption] = useState('1week')
@@ -53,8 +55,8 @@ export function ConfidentialModeComponent({ onToggle }) {
 
   const handleToggleConfidential = useCallback(() => {
     // Coming soon - feature disabled
-    alert('Confidential mode coming soon!')
-  }, [])
+    showError('Confidential mode coming soon!')
+  }, [showError])
 
   const handleSave = useCallback(() => {
     const expiryDate = getExpiryDate(expiryOption)
