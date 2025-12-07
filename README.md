@@ -271,7 +271,7 @@ MailMind/
 ### 🖥️ Desktop Experience
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/dashboard.png" alt="MailMind Dashboard" width="800" />
+  <img src="https://ibb.co/vv1SDF3G" alt="MailMind Dashboard" width="800" />
   <p><em>MailMind Dashboard - AI-powered email management with smart summaries and analytics</em></p>
 </div>
 
@@ -286,27 +286,6 @@ MailMind/
   <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/mobile.jpg" alt="MailMind Mobile" width="400" />
   <p><em>Fully responsive design - works seamlessly on mobile devices</em></p>
 </div>
-
----
-
-## 🗺️ Roadmap
-
-- [x] Gmail OAuth integration
-- [x] Email inbox, sent, drafts, archive, spam, trash
-- [x] AI email summarization
-- [x] Smart search with highlighting
-- [x] Email analytics dashboard
-- [x] Client-side caching for instant loads
-- [ ] AI-assisted email drafting
-- [ ] Multiple Gmail account support
-- [ ] Email templates
-- [ ] Scheduled sending
-- [ ] Browser extension
-- [ ] Mobile app (React Native)
-
-See the [open issues](https://github.com/DaxModi/MailMind/issues) for a full list of proposed features and known issues.
-
----
 
 ## 🤝 Contributing
 
