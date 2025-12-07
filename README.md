@@ -22,17 +22,17 @@
   <table>
     <tr>
       <td align="center" width="33%">
-        <img src="public/demo_screenshots/dashboard.png" alt="Dashboard" width="250" />
+        <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/dashboard.png" alt="Dashboard" width="250" />
         <h3>🤖 AI-Powered Dashboard</h3>
         <p>Smart email analytics and AI summaries</p>
       </td>
       <td align="center" width="33%">
-        <img src="public/demo_screenshots/pc.png" alt="Compose" width="250" />
+        <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/pc.png" alt="Compose" width="250" />
         <h3>✍️ Rich Email Composer</h3>
         <p>Advanced formatting and AI assistance</p>
       </td>
       <td align="center" width="33%">
-        <img src="public/demo_screenshots/mobile.jpg" alt="Mobile" width="150" />
+        <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/mobile.jpg" alt="Mobile" width="150" />
         <h3>📱 Mobile Responsive</h3>
         <p>Seamless experience across devices</p>
       </td>
@@ -271,19 +271,19 @@ MailMind/
 ### 🖥️ Desktop Experience
 
 <div align="center">
-  <img src="public/demo_screenshots/dashboard.png" alt="MailMind Dashboard" width="800" />
+  <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/dashboard.png" alt="MailMind Dashboard" width="800" />
   <p><em>MailMind Dashboard - AI-powered email management with smart summaries and analytics</em></p>
 </div>
 
 <div align="center">
-  <img src="public/demo_screenshots/pc.png" alt="MailMind Desktop Interface" width="800" />
+  <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/pc.png" alt="MailMind Desktop Interface" width="800" />
   <p><em>Email composition with AI assistance and rich formatting options</em></p>
 </div>
 
 ### 📱 Mobile Responsive
 
 <div align="center">
-  <img src="public/demo_screenshots/mobile.jpg" alt="MailMind Mobile" width="400" />
+  <img src="https://raw.githubusercontent.com/daxmodi1/MailMind/main/public/demo_screenshots/mobile.jpg" alt="MailMind Mobile" width="400" />
   <p><em>Fully responsive design - works seamlessly on mobile devices</em></p>
 </div>
 
