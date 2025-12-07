@@ -9,7 +9,17 @@ export default function PrivacyPage() {
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-gray-600">Last updated: December 7, 2025</p>
+          <p className="text-gray-600 mb-4">Last updated: December 7, 2025</p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">🔒 Google User Data Protection</h3>
+            <p className="text-blue-800 text-sm">
+              MailMind's use of information received from Gmail APIs will adhere to 
+              <a href="https://developers.google.com/terms/api-services-user-data-policy" className="underline hover:text-blue-600" target="_blank" rel="noopener noreferrer">
+                Google API Services User Data Policy
+              </a>, including the Limited Use requirements. Your Gmail data is never sold, used for advertising, or shared without your consent.
+            </p>
+          </div>
         </div>
 
         <div className="prose max-w-none">
@@ -59,10 +69,58 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Data Sharing and Third Parties</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Google User Data Usage</h2>
             
             <div className="mb-6">
-              <h3 className="text-xl font-medium text-gray-900 mb-3">4.1 AI Processing</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">4.1 Gmail API Scope and Purpose</h3>
+              <p className="text-gray-700 leading-relaxed">
+                MailMind requests access to your Gmail data through the following Google API scopes:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2 mt-2">
+                <li><strong>gmail.readonly:</strong> To read your email messages and metadata for display and search</li>
+                <li><strong>gmail.modify:</strong> To mark emails as read/unread, archive, delete, and organize</li>
+                <li><strong>gmail.send:</strong> To send emails and replies on your behalf</li>
+                <li><strong>userinfo.email & userinfo.profile:</strong> For authentication and account identification</li>
+              </ul>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-3">4.2 Limited Use Compliance</h3>
+              <p className="text-gray-700 leading-relaxed">
+                MailMind's use of information received from Gmail APIs adheres to 
+                <a href="https://developers.google.com/terms/api-services-user-data-policy" className="text-blue-600 hover:underline">
+                  Google API Services User Data Policy
+                </a>, including the Limited Use requirements:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2 mt-2">
+                <li>Gmail data is only used to provide or improve MailMind's email management features</li>
+                <li>Data is not transferred to others unless doing so is necessary for security purposes, legal compliance, or with your explicit consent</li>
+                <li>Data is not used or transferred for serving ads, including retargeting or personalized advertising</li>
+                <li>Data is not used or transferred to determine creditworthiness or for lending purposes</li>
+              </ul>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-3">4.3 Data Processing Activities</h3>
+              <p className="text-gray-700 leading-relaxed">
+                We process your Gmail data exclusively for the following legitimate purposes:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2 mt-2">
+                <li><strong>Email Display:</strong> Rendering your emails in our interface</li>
+                <li><strong>AI Summarization:</strong> Generating intelligent summaries using Groq's LLM API</li>
+                <li><strong>Search Functionality:</strong> Enabling fast search across your email content</li>
+                <li><strong>Email Management:</strong> Organizing, archiving, and managing your emails</li>
+                <li><strong>Sending Emails:</strong> Composing and sending emails through your Gmail account</li>
+                <li><strong>Analytics:</strong> Providing usage statistics (aggregated, non-identifiable)</li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Data Sharing and Third Parties</h2>
+            
+            <div className="mb-6">
+              <h3 className="text-xl font-medium text-gray-900 mb-3">5.1 AI Processing</h3>
               <p className="text-gray-700 leading-relaxed">
                 We use <strong>Groq's AI services</strong> to provide email summarization. When you request an email summary:
               </p>
@@ -71,52 +129,62 @@ export default function PrivacyPage() {
                 <li>Groq processes the data temporarily to generate summaries</li>
                 <li>No email content is stored permanently by Groq</li>
                 <li>All communication is encrypted in transit</li>
+                <li>Groq's use of data complies with our Limited Use requirements</li>
               </ul>
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xl font-medium text-gray-900 mb-3">4.2 Google Services</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">5.2 Google Services</h3>
               <p className="text-gray-700 leading-relaxed">
                 We integrate with Google services for authentication and Gmail access. Your data is subject to 
-                Google's privacy policies when processed through their services.
+                Google's privacy policies when processed through their services. We do not share your Gmail data 
+                with Google beyond what is necessary for the API functionality.
               </p>
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xl font-medium text-gray-900 mb-3">4.3 No Sale of Data</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">5.3 No Sale or Unauthorized Transfer of Data</h3>
               <p className="text-gray-700 leading-relaxed">
-                We do not sell, rent, or trade your personal information or email content to third parties 
-                for marketing or commercial purposes.
+                We do not sell, rent, trade, or transfer your personal information or Gmail data to third parties 
+                for marketing, advertising, or commercial purposes. Any data sharing is strictly limited to:
               </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2 mt-2">
+                <li>Service providers necessary for MailMind functionality (e.g., Groq for AI processing)</li>
+                <li>Legal compliance or law enforcement when required</li>
+                <li>Security purposes to protect user safety</li>
+                <li>With your explicit consent</li>
+              </ul>
             </div>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Data Storage and Security</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Data Storage and Security</h2>
             
             <div className="mb-6">
-              <h3 className="text-xl font-medium text-gray-900 mb-3">5.1 Data Storage</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">6.1 Data Storage</h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li><strong>Email Content:</strong> Not stored permanently on our servers</li>
-                <li><strong>Temporary Cache:</strong> Brief client-side caching for performance (2-minute TTL)</li>
-                <li><strong>Session Data:</strong> Stored temporarily for authentication purposes</li>
-                <li><strong>Analytics Data:</strong> Aggregated, non-identifiable usage statistics</li>
+                <li><strong>Gmail Content:</strong> Not stored permanently on our servers - accessed in real-time through Gmail API</li>
+                <li><strong>Temporary Cache:</strong> Brief client-side caching for performance (2-minute TTL, then automatically deleted)</li>
+                <li><strong>Session Data:</strong> Stored temporarily for authentication purposes only</li>
+                <li><strong>Analytics Data:</strong> Aggregated, non-identifiable usage statistics only</li>
+                <li><strong>No Persistent Storage:</strong> We do not maintain permanent copies of your email content</li>
               </ul>
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xl font-medium text-gray-900 mb-3">5.2 Security Measures</h3>
+              <h3 className="text-xl font-medium text-gray-900 mb-3">6.2 Security Measures</h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li><strong>Encryption:</strong> All data transmission is encrypted using HTTPS/TLS</li>
-                <li><strong>OAuth 2.0:</strong> Secure authentication through Google's OAuth system</li>
+                <li><strong>Encryption:</strong> All data transmission is encrypted using HTTPS/TLS 1.3</li>
+                <li><strong>OAuth 2.0:</strong> Secure authentication through Google's OAuth system with refresh tokens</li>
                 <li><strong>Access Controls:</strong> Limited access to user data on a need-to-know basis</li>
-                <li><strong>Regular Updates:</strong> Security patches and dependency updates</li>
+                <li><strong>Regular Updates:</strong> Security patches and dependency updates applied promptly</li>
+                <li><strong>No Storage:</strong> Email content is never stored on our servers, reducing security risks</li>
               </ul>
             </div>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Your Rights and Choices</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Your Rights and Choices</h2>
             <div className="space-y-4 text-gray-700">
               <p><strong>6.1 Access Control:</strong> You can revoke MailMind's access to your Gmail account at any time through your Google Account settings.</p>
               <p><strong>6.2 Data Deletion:</strong> When you revoke access, all cached data is automatically purged from our systems.</p>

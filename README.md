@@ -287,9 +287,15 @@ Contributions are what make the open source community amazing! Any contributions
 
 ---
 
-## 📄 License
+## 📄 License & Privacy
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
+**Important Links:**
+- 📋 [Terms of Service](https://mailmind1.vercel.app/terms)
+- 🔒 [Privacy Policy](https://mailmind1.vercel.app/privacy)
+
+MailMind complies with Google's API Services User Data Policy, including Limited Use requirements. We never sell your data or use it for advertising.
 
 ---
 
