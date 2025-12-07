@@ -10,8 +10,34 @@
   [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
   [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
   
-  [Demo](https://mailmind.vercel.app) · [Report Bug](https://github.com/DaxModi/MailMind/issues) · [Request Feature](https://github.com/DaxModi/MailMind/issues)
+  [Demo](https://mailmind1.vercel.app) · [Report Bug](https://github.com/DaxModi/MailMind/issues) · [Request Feature](https://github.com/DaxModi/MailMind/issues)
   
+</div>
+
+---
+
+## 🌟 Key Features Preview
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="33%">
+        <img src="public/demo_screenshots/dashboard.png" alt="Dashboard" width="250" />
+        <h3>🤖 AI-Powered Dashboard</h3>
+        <p>Smart email analytics and AI summaries</p>
+      </td>
+      <td align="center" width="33%">
+        <img src="public/demo_screenshots/pc.png" alt="Compose" width="250" />
+        <h3>✍️ Rich Email Composer</h3>
+        <p>Advanced formatting and AI assistance</p>
+      </td>
+      <td align="center" width="33%">
+        <img src="public/demo_screenshots/mobile.jpg" alt="Mobile" width="150" />
+        <h3>📱 Mobile Responsive</h3>
+        <p>Seamless experience across devices</p>
+      </td>
+    </tr>
+  </table>
 </div>
 
 ---
@@ -242,9 +268,23 @@ MailMind/
 
 ## 📸 Screenshots
 
+### 🖥️ Desktop Experience
+
 <div align="center">
-  <img src="public/mockup.png" alt="MailMind Dashboard" width="800" />
-  <p><em>MailMind Dashboard - Clean, modern email interface</em></p>
+  <img src="public/demo_screenshots/dashboard.png" alt="MailMind Dashboard" width="800" />
+  <p><em>MailMind Dashboard - AI-powered email management with smart summaries and analytics</em></p>
+</div>
+
+<div align="center">
+  <img src="public/demo_screenshots/pc.png" alt="MailMind Desktop Interface" width="800" />
+  <p><em>Email composition with AI assistance and rich formatting options</em></p>
+</div>
+
+### 📱 Mobile Responsive
+
+<div align="center">
+  <img src="public/demo_screenshots/mobile.jpg" alt="MailMind Mobile" width="400" />
+  <p><em>Fully responsive design - works seamlessly on mobile devices</em></p>
 </div>
 
 ---
