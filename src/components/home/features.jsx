@@ -34,7 +34,7 @@ export default function Features() {
         
         {[
           {
-            src: '/mail.svg',
+            src: '/Mail.svg',
             title: 'AI Email Summaries',
             desc: 'Get instant AI-generated summaries of long emails. Understand the key points in seconds without reading walls of text.',
             alt: 'AI Email Summaries',
@@ -58,7 +58,7 @@ export default function Features() {
             alt: 'Gmail Integration',
           },
           {
-            src: '/security.svg',
+            src: '/Security.svg',
             title: 'Privacy-First Design',
             desc: [
               'Your emails stay private. We use secure OAuth and',
