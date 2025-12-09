@@ -48,7 +48,7 @@ End with "Sincerely, ${userName}"`
       setShowGenerated(true)
     } catch (err) {
       setError(err.message)
-      // Email generation error
+      console.error('Email generation error:', err)
     } finally {
       setLoading(false)
     }
@@ -93,7 +93,7 @@ End with "Sincerely, ${userName}"`
       }, 100)
     } catch (err) {
       setError('Failed to insert email: ' + err.message)
-      // Insert error occurred
+      console.error('Insert error:', err)
     }
   }
 
@@ -133,7 +133,7 @@ End with "Sincerely, ${userName}"`
       setGeneratedEmail(data.email)
     } catch (err) {
       setError(err.message)
-      // Email refinement error
+      console.error('Email refinement error:', err)
     } finally {
       setLoading(false)
     }

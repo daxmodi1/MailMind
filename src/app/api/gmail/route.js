@@ -40,14 +40,14 @@ export function invalidateUserEmailCache(userId) {
     }
   });
   keysToDelete.forEach(key => emailCache.delete(key));
-  // Invalidated cache entries for user
+  console.log(`🗑️ Invalidated ${keysToDelete.length} cache entries for user ${userId}`);
 }
 
 export function invalidateEmailTypeCache(userId, type) {
   const key = getCacheKey(userId, type);
   if (emailCache.has(key)) {
     emailCache.delete(key);
-    // Invalidated cache for type
+    console.log(`🗑️ Invalidated cache for ${type}`);
   }
 }
 
@@ -76,7 +76,7 @@ export async function GET(req) {
     // Clear server cache if refresh requested
     if (refresh) {
       invalidateUserEmailCache(userId);
-      // Refresh requested - server cache cleared for user
+      console.log(`🔄 Refresh requested - server cache cleared for user ${userId}`);
     }
 
     // Check cache first (only for first page and not a refresh request)
@@ -141,7 +141,7 @@ export async function GET(req) {
     });
 
   } catch (error) {
-    // Gmail API error
+    console.error("Gmail API error:", error);
 
     if (error.code === 401 || (error.message && error.message.includes('invalid_token'))) {
       return NextResponse.json(
@@ -204,7 +204,7 @@ async function fetchMetadataEmails(gmail, query = null, pageToken = null, maxRes
       nextPageToken: emailList.data.nextPageToken || null
     };
   } catch (error) {
-    // Error fetching email list
+    console.error('Error fetching email list:', error);
     throw error;
   }
 }
@@ -253,7 +253,7 @@ async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
     
     return allEmails.slice(0, maxResults);
   } catch (error) {
-    // Error fetching read emails
+    console.error('Error fetching read emails:', error);
     throw error;
   }
 }
@@ -417,13 +417,13 @@ function processPart(part, attachments, inlineImages) {
     try {
       html = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      // Error decoding HTML content
+      console.error('Error decoding HTML content:', error);
     }
   } else if (mimeType === 'text/plain' && part.body && part.body.data) {
     try {
       text = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      // Error decoding text content
+      console.error('Error decoding text content:', error);
     }
   } else if (mimeType.startsWith('image/')) {
     // Handle images (both inline and attachments)

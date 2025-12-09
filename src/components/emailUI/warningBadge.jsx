@@ -17,7 +17,7 @@ export function AutoDeleteBadge({ folderType }) {
     );
     if (confirmDelete) {
       // Call your API to delete all messages
-      // Deleting messages
+      console.log(`Deleting all ${folderName.toLowerCase()} messages...`);
     }
   };
 

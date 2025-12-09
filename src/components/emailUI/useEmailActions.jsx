@@ -6,7 +6,7 @@ import { useAlert } from '@/components/providers/AlertProvider'
 export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, attachments, isConfidential, confidentialData) => {
   const saveDraft = useCallback(async () => {
     if (!editorInstance) {
-      // Editor not initialized
+      console.error('Editor not initialized')
       return null
     }
 
@@ -16,13 +16,13 @@ export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, atta
         htmlContent = $generateHtmlFromNodes(editorInstance, null)
       })
 
-      // Saving Draft
-      // To field data
-      // Subject field data
-      // Content length data
-      // CC field data
-      // BCC field data
-      // Attachments count
+      console.log('=== Saving Draft ===')
+      console.log('To:', to || '(empty)')
+      console.log('Subject:', subject || '(empty)')
+      console.log('Content length:', htmlContent?.length || 0)
+      console.log('CC:', cc || '(empty)')
+      console.log('BCC:', bcc || '(empty)')
+      console.log('Attachments:', attachments.length)
 
       const draft = {
         to,
@@ -42,7 +42,7 @@ export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, atta
 
       // Save to localStorage
       localStorage.setItem('emailDraft', JSON.stringify(draft))
-      // ✓ Draft saved to localStorage
+      console.log('✓ Draft saved to localStorage')
 
       // Also save to backend API
       try {
@@ -62,7 +62,7 @@ export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, atta
           formData.append('attachments', file)
         })
 
-        // Sending draft to backend API
+        console.log('Sending draft to backend API...')
         const response = await fetch('/api/send-email', {
           method: 'POST',
           body: formData
@@ -71,18 +71,18 @@ export const useDraftFunctionality = (editorInstance, to, subject, cc, bcc, atta
         const result = await response.json()
 
         if (response.ok) {
-          // ✓ Draft saved to backend
+          console.log('✓ Draft saved to backend:', result.draftId)
           return { ...draft, draftId: result.draftId }
         } else {
-          // ⚠️ Backend draft save failed
+          console.warn('⚠️ Backend draft save failed:', result.error)
           return draft
         }
       } catch (backendError) {
-        // ⚠️ Error saving draft to backend
+        console.warn('⚠️ Error saving draft to backend:', backendError)
         return draft
       }
     } catch (error) {
-      // ❌ Error saving draft
+      console.error('❌ Error saving draft:', error)
       return null
     }
   }, [to, subject, cc, bcc, attachments, isConfidential, confidentialData, editorInstance])
@@ -103,20 +103,20 @@ export const useEmailSending = (onToggle, resetForm) => {
       const result = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        // Email send error response
+        console.error('Email send error response:', result)
         const errorMessage = result.error || `Email sending failed: ${response.statusText}`
         showError(errorMessage)
         throw new Error(errorMessage)
       }
 
-      // Email sent successfully
+      console.log('Email sent successfully:', result)
       showSuccess(`Email sent successfully! Message ID: ${result.messageId}`)
       resetForm()
       onToggle?.()
       return result
 
     } catch (error) {
-      // Error sending email
+      console.error('Error sending email:', error)
       if (!error.message.includes('Email sending failed:')) {
         showError(`Failed to send email: ${error.message}`)
       }

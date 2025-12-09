@@ -45,21 +45,21 @@ export function useEmailActions(type, subtype) {
 
       // Update cache for all operations
       idsArray.forEach(id => {
-        // Performing operation
+        console.log(`📝 Performing ${operation} on ${id}`);
         if (removeFromUI || operation === 'delete' || operation === 'archive') {
           // Remove from cache
-          // Removing from cache
+          console.log(`🗑️ Removing ${id} from cache`);
           removeCachedEmail(id);
         } else if (operation === 'markRead') {
           // Update cache to remove UNREAD label
-          // Marking as read in cache
+          console.log(`📖 Marking ${id} as read in cache`);
           updateCachedEmail(id, (email) => ({
             ...email,
             labelIds: (email.labelIds || []).filter(label => label !== 'UNREAD')
           }));
         } else if (operation === 'markUnread') {
           // Update cache to add UNREAD label
-          // Marking as unread in cache
+          console.log(`📬 Marking ${id} as unread in cache`);
           updateCachedEmail(id, (email) => {
             const labelIds = email.labelIds || [];
             if (!labelIds.includes('UNREAD')) {
@@ -110,7 +110,7 @@ export function useEmailActions(type, subtype) {
 
       return data;
     } catch (err) {
-      // Operation failed
+      console.error(`Failed to ${operation}:`, err);
       alert(`Failed to ${operation}. Please try again.`);
       throw err;
     }

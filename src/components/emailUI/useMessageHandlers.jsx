@@ -91,7 +91,7 @@ export const useSendHandlers = (editorInstance, to, subject, cc, bcc, attachment
       await sendEmailViaAPI(emailData)
     } catch (error) {
       showError(error.message)
-      // Error sending email
+      console.error('Error sending email:', error)
     }
   }, [editorInstance, to, subject, cc, bcc, attachments, confidentialData, sendEmailViaAPI, validateAndPrepareEmail, showError])
 

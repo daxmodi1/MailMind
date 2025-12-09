@@ -51,23 +51,23 @@ export function MessageFooter({
         onAttachClick()
         break
       case 'help':
-        // Opening help me write dialog
+        console.log('Opening help me write dialog')
         onHelpClick()
         break
       case 'link':
-        // Insert link clicked
+        console.log('Insert link clicked')
         break
       case 'drive':
-        // Insert from Drive clicked
+        console.log('Insert from Drive clicked')
         break
       case 'image':
-        // Insert image clicked
+        console.log('Insert image clicked')
         break
       case 'confidential':
-        // Toggle confidential mode clicked
+        console.log('Toggle confidential mode clicked')
         break
       case 'signature':
-        // Insert signature clicked
+        console.log('Insert signature clicked')
         break
       default:
         break

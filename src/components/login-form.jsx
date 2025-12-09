@@ -19,11 +19,11 @@ export function LoginForm({
 }) {
   const handleSignIn = async () => {
     try {
-      // Starting Google sign in
+      console.log("Starting Google sign in...");
       // Sign in with Google
       await signIn("google", { callbackUrl: "/dashboard", redirect: true });
     } catch (error) {
-      // Sign in error occurred
+      console.error('Sign in error:', error);
     }
   };
 

@@ -25,14 +25,14 @@ export async function POST(req) {
         const attachmentFiles = formData.getAll('attachments')
         
         // Log incoming data for debugging
-        // Email API Request
-        // Processing draft mode
-        // Processing recipient
-        // Processing subject
-        // Processing message content
-        // Processing CC
-        // Processing BCC
-        // Processing attachments
+        console.log('=== Email API Request ===')
+        console.log('isDraft:', isDraft)
+        console.log('to:', to || '(empty)')
+        console.log('subject:', subject || '(empty)')
+        console.log('message length:', message?.length || 0)
+        console.log('cc:', cc || '(empty)')
+        console.log('bcc:', bcc || '(empty)')
+        console.log('attachments:', attachmentFiles.length)
         
         // Parse confidential mode data
         const confidentialStr = formData.get('confidential')
@@ -40,9 +40,9 @@ export async function POST(req) {
         if (confidentialStr) {
             try {
                 confidentialMode = JSON.parse(confidentialStr)
-                // Confidential mode enabled
+                console.log('Confidential mode enabled:', confidentialMode)
             } catch (err) {
-                // Failed to parse confidential data
+                console.warn('Failed to parse confidential data:', err)
             }
         }
 
@@ -50,17 +50,17 @@ export async function POST(req) {
         if (!isDraft) {
             // For sending: require recipient, subject, and message
             if (!to || !to.trim()) {
-                // Validation error: Missing recipient email
+                console.error('❌ Validation error: Missing recipient email')
                 return NextResponse.json({ error: "Recipient email required" }, { status: 400 })
             }
 
             if (!subject || !subject.trim()) {
-                // Validation error: Missing subject
+                console.error('❌ Validation error: Missing subject')
                 return NextResponse.json({ error: "Subject required" }, { status: 400 })
             }
 
             if (!message || !message.trim()) {
-                // Validation error: Empty message
+                console.error('❌ Validation error: Empty message')
                 return NextResponse.json({ error: "Message body empty" }, { status: 400 })
             }
         }
@@ -68,7 +68,7 @@ export async function POST(req) {
 
         // Handle Draft Save (skip Gmail sending)
         if (isDraft) {
-            // Saving draft email to Gmail
+            console.log(`Saving draft email to Gmail`)
             
             try {
                 // Setup OAuth2 Client for Gmail API
@@ -127,7 +127,7 @@ export async function POST(req) {
                     
                     // Attachments
                     for (const file of attachmentFiles) {
-                        // Processing attachment
+                        console.log(`Processing attachment: ${file.name} (${file.type}, ${file.size} bytes)`)
                         
                         const buffer = await file.arrayBuffer()
                         const base64Data = Buffer.from(buffer).toString('base64')
@@ -179,7 +179,7 @@ export async function POST(req) {
                     .replace(/=+$/, '')
 
                 // Save as draft in Gmail
-                // Creating draft in Gmail
+                console.log('Creating draft in Gmail...')
                 const draftResult = await gmail.users.drafts.create({
                     userId: "me",
                     requestBody: {
@@ -189,8 +189,8 @@ export async function POST(req) {
                     }
                 })
 
-                // Draft created successfully in Gmail
-                // Draft created with ID
+                console.log('✓ Draft created successfully in Gmail!')
+                console.log('Draft ID:', draftResult.data.id)
 
                 return NextResponse.json({
                     success: true,
@@ -200,7 +200,7 @@ export async function POST(req) {
                 })
 
             } catch (error) {
-                // Draft save error
+                console.error("❌ Draft save error:", error)
                 return NextResponse.json(
                     {
                         success: false,
@@ -210,7 +210,7 @@ export async function POST(req) {
                     { status: 500 }
                 )
             }
-        // Preparing email with attachments
+        }        console.log(`Preparing email to ${to} with ${attachmentFiles.length} attachments`)
 
         // 3) Create RFC 2822 formatted email with proper MIME structure
         const emailLines = []
@@ -267,7 +267,7 @@ export async function POST(req) {
             
             // Attachments
             for (const file of attachmentFiles) {
-                // Processing attachment
+                console.log(`Processing attachment: ${file.name} (${file.type}, ${file.size} bytes)`)
                 
                 const buffer = await file.arrayBuffer()
                 const base64Data = Buffer.from(buffer).toString('base64')
@@ -319,7 +319,9 @@ export async function POST(req) {
         const email = emailLines.join('\r\n')
         
         // Debug: show structure
-        // MIME structure prepared
+        console.log('MIME Structure (first 2000 chars):')
+        console.log(email.substring(0, 2000))
+        console.log(`\nTotal email size: ${email.length} bytes`)
 
         // 4) Base64url encode for Gmail API
         const encodedMail = Buffer.from(email)
@@ -343,7 +345,7 @@ export async function POST(req) {
         const gmail = google.gmail({ version: "v1", auth: oAuth2Client })
 
         // 6) Send via Gmail API
-        // Sending email via Gmail API
+        console.log('Sending email via Gmail API...')
         
         const sendResult = await gmail.users.messages.send({
             userId: "me",
@@ -352,8 +354,9 @@ export async function POST(req) {
             },
         })
 
-        // ✓ Email sent successfully
-        // Email sent with message and thread IDs
+        console.log('✓ Email sent successfully!')
+        console.log('Message ID:', sendResult.data.id)
+        console.log('Thread ID:', sendResult.data.threadId)
 
         return NextResponse.json({
             success: true,
@@ -362,12 +365,12 @@ export async function POST(req) {
         });
 
     } catch (error) {
-        // Email sending error
+        console.error("❌ Email sending error:", error)
         
         // Log detailed error information
         if (error.response) {
-            // Response status error
-            // Response data error
+            console.error("Response status:", error.response.status)
+            console.error("Response data:", JSON.stringify(error.response.data, null, 2))
         }
         
         let err = "Failed to send email"

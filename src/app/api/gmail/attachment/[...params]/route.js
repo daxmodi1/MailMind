@@ -6,13 +6,13 @@ import { createGmailClient } from "@/lib/gmailUtils";
 export async function GET(req, { params }) {
   const { id } = params;
   
-  // Fetching email with ID
+  console.log('Fetching email with ID:', id);
   
   try {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
-      // No session found
+      console.log('No session found');
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
@@ -20,14 +20,14 @@ export async function GET(req, { params }) {
     const refreshToken = session.refreshToken;
 
     if (!accessToken || !refreshToken) {
-      // No access or refresh token
+      console.log('No access or refresh token');
       return NextResponse.json({ error: "No access or refresh token" }, { status: 401 });
     }
 
-    // Creating Gmail client
+    console.log('Creating Gmail client...');
     const gmail = createGmailClient(accessToken, refreshToken);
     
-    // Fetching email from Gmail API
+    console.log('Fetching email from Gmail API...');
     // Fetch the specific email
     const email = await gmail.users.messages.get({
       userId: 'me',
@@ -35,14 +35,19 @@ export async function GET(req, { params }) {
       format: 'full',
     });
 
-    // Email fetched successfully, parsing content
+    console.log('Email fetched successfully, parsing content...');
     // Parse email content using the same function from your main Gmail route
     const emailData = parseEmailContent(email.data);
     
     return NextResponse.json(emailData);
     
   } catch (error) {
-    // Detailed error fetching single email
+    console.error('Detailed error fetching single email:', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      emailId: id
+    });
 
     // Handle specific Gmail API errors
     if (error.code === 401 || (error.message && error.message.includes('invalid_token'))) {
@@ -148,13 +153,13 @@ function processPart(part, attachments, inlineImages) {
     try {
       html = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      // Error decoding HTML content
+      console.error('Error decoding HTML content:', error);
     }
   } else if (mimeType === 'text/plain' && part.body && part.body.data) {
     try {
       text = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      // Error decoding text content
+      console.error('Error decoding text content:', error);
     }
   } else if (mimeType.startsWith('image/')) {
     // Handle images (both inline and attachments)

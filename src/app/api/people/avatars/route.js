@@ -29,7 +29,7 @@ export async function POST(req) {
       return NextResponse.json({});
     }
 
-    // Fetching avatars for emails
+    console.log(`Fetching avatars for ${emails.length} email(s)`);
 
     const avatarUrls = {};
 
@@ -45,12 +45,12 @@ export async function POST(req) {
       })
     );
 
-    // Avatar fetch complete
+    console.log(`Avatar fetch complete: ${Object.keys(avatarUrls).length} avatars found`);
 
     return NextResponse.json(avatarUrls);
     
   } catch (error) {
-    // Error in avatar API
+    console.error('Error in avatar API:', error);
     return NextResponse.json({ 
       error: 'Failed to fetch avatars',
       details: error.message 
@@ -63,34 +63,34 @@ async function getFallbackAvatar(email, domain, localPart) {
   // Strategy 1: Try Gravatar (checks if user has one)
   const gravatarUrl = getGravatarUrl(email);
   if (await checkUrlExists(gravatarUrl)) {
-    // ✓ Gravatar found
+    console.log(`✓ Gravatar: ${email}`);
     return { url: gravatarUrl, source: 'gravatar' };
   }
 
   // Strategy 2: Try Clearbit for company logo (good for corporate emails)
   const clearbitUrl = `https://logo.clearbit.com/${domain}`;
   if (await checkUrlExists(clearbitUrl)) {
-    // ✓ Clearbit found
+    console.log(`✓ Clearbit: ${email}`);
     return { url: clearbitUrl, source: 'clearbit' };
   }
 
   // Strategy 3: Try Unavatar (checks multiple sources including GitHub, Twitter, etc.)
   const unavatarUrl = `https://unavatar.io/${email}`;
   if (await checkUrlExists(unavatarUrl)) {
-    // ✓ Unavatar found
+    console.log(`✓ Unavatar: ${email}`);
     return { url: unavatarUrl, source: 'unavatar' };
   }
 
   // Strategy 4: Try Google Favicon service (always returns something)
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   if (domain && !domain.includes('gmail.com') && !domain.includes('outlook.com') && !domain.includes('yahoo.com')) {
-    // → Favicon fallback
+    console.log(`→ Favicon: ${email}`);
     return { url: faviconUrl, source: 'favicon' };
   }
 
   // Strategy 5: Use DiceBear for generated avatar (always works, looks good)
   const dicebearUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(localPart)}&backgroundColor=3b82f6,8b5cf6,ec4899,f59e0b,10b981`;
-  // → Generated avatar
+  console.log(`→ Generated: ${email}`);
   return { url: dicebearUrl, source: 'dicebear' };
 }
 

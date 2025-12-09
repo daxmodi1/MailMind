@@ -47,16 +47,16 @@ export default function WriteMessage({ isOpen, onToggle }) {
   const handleConfidentialToggle = useCallback((data) => {
     setConfidentialData(data)
     if (data) {
-      // Confidential mode enabled
+      console.log('Confidential mode enabled:', data)
     } else {
-      // Confidential mode disabled
+      console.log('Confidential mode disabled')
     }
   }, [])
 
   const initialConfig = useMemo(() => ({
     namespace: 'EmailEditor',
     theme: editorTheme,
-    onError: (error) => {}, // Lexical error handling
+    onError: (error) => console.error('Lexical error:', error),
     nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
   }), [])
 
@@ -111,7 +111,7 @@ export default function WriteMessage({ isOpen, onToggle }) {
           root.clear()
         })
       } catch (err) {
-        // Failed to clear editor content
+        console.warn('Failed to clear editor content:', err)
       }
     }
   }, [editorInstance])
