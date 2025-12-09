@@ -23,14 +23,13 @@ export async function POST(req) {
             )
         }
 
-        console.log('Starting email summarization...')
-        console.log('Content length:', emailContent.length)
+        // Starting email summarization
+        // Content length for summarization
 
         // Call the summarize chain
         const summary = await summarizeChain(emailContent)
 
-        console.log('✓ Summarization completed')
-        console.log('Summary:', summary)
+        // ✓ Summarization completed
 
         return NextResponse.json({
             success: true,
@@ -38,7 +37,7 @@ export async function POST(req) {
         })
 
     } catch (error) {
-        console.error("❌ Summarization error:", error)
+        // Summarization error
         
         // Check if this is a premium requirement error
         if (error.message && error.message.startsWith('PREMIUM_REQUIRED:')) {

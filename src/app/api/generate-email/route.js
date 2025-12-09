@@ -23,13 +23,13 @@ export async function POST(req) {
             )
         }
 
-        console.log('Starting email generation...')
-        console.log('Prompt:', prompt)
+        // Starting email generation
+        // Email generation prompt
 
         // Call the generate email chain
         const generatedEmail = await generateEmailChain(prompt)
 
-        console.log('✓ Email generation completed')
+        // ✓ Email generation completed
 
         return NextResponse.json({
             success: true,
@@ -37,7 +37,7 @@ export async function POST(req) {
         })
 
     } catch (error) {
-        console.error("❌ Email generation error:", error)
+        // Email generation error
         
         return NextResponse.json(
             {

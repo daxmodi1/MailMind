@@ -32,7 +32,7 @@ export async function POST(request) {
     // Check for failures
     const failures = results.filter(r => r.status === 'rejected');
     if (failures.length > 0) {
-      console.error('Some operations failed:', failures);
+      // Some operations failed
       return NextResponse.json(
         {
           success: false,
@@ -52,7 +52,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Gmail operation error:', error);
+    // Gmail operation error
     return NextResponse.json(
       { error: error.message || 'Operation failed' },
       { status: 500 }

@@ -28,11 +28,11 @@ export function SearchProvider({ children }) {
         const emails = Array.isArray(data) ? data : (data.emails || []);
         setSearchResults(emails);
       } else {
-        console.error('Search failed');
+        // Search failed
         setSearchResults([]);
       }
     } catch (error) {
-      console.error('Search error:', error);
+      // Search error occurred
       setSearchResults([]);
     } finally {
       setIsSearching(false);

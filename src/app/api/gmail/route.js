@@ -40,14 +40,14 @@ export function invalidateUserEmailCache(userId) {
     }
   });
   keysToDelete.forEach(key => emailCache.delete(key));
-  console.log(`🗑️ Invalidated ${keysToDelete.length} cache entries for user ${userId}`);
+  // Invalidated cache entries for user
 }
 
 export function invalidateEmailTypeCache(userId, type) {
   const key = getCacheKey(userId, type);
   if (emailCache.has(key)) {
     emailCache.delete(key);
-    console.log(`🗑️ Invalidated cache for ${type}`);
+    // Invalidated cache for type
   }
 }
 
@@ -76,7 +76,7 @@ export async function GET(req) {
     // Clear server cache if refresh requested
     if (refresh) {
       invalidateUserEmailCache(userId);
-      console.log(`🔄 Refresh requested - server cache cleared for user ${userId}`);
+      // Refresh requested - server cache cleared for user
     }
 
     // Check cache first (only for first page and not a refresh request)
@@ -141,7 +141,7 @@ export async function GET(req) {
     });
 
   } catch (error) {
-    console.error("Gmail API error:", error);
+    // Gmail API error
 
     if (error.code === 401 || (error.message && error.message.includes('invalid_token'))) {
       return NextResponse.json(
@@ -204,7 +204,7 @@ async function fetchMetadataEmails(gmail, query = null, pageToken = null, maxRes
       nextPageToken: emailList.data.nextPageToken || null
     };
   } catch (error) {
-    console.error('Error fetching email list:', error);
+    // Error fetching email list
     throw error;
   }
 }
@@ -253,7 +253,7 @@ async function fetchReadEmails(gmail, labelIds, maxResults = 10) {
     
     return allEmails.slice(0, maxResults);
   } catch (error) {
-    console.error('Error fetching read emails:', error);
+    // Error fetching read emails
     throw error;
   }
 }
@@ -417,13 +417,13 @@ function processPart(part, attachments, inlineImages) {
     try {
       html = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      console.error('Error decoding HTML content:', error);
+      // Error decoding HTML content
     }
   } else if (mimeType === 'text/plain' && part.body && part.body.data) {
     try {
       text = Buffer.from(part.body.data, 'base64').toString('utf-8');
     } catch (error) {
-      console.error('Error decoding text content:', error);
+      // Error decoding text content
     }
   } else if (mimeType.startsWith('image/')) {
     // Handle images (both inline and attachments)

@@ -21,7 +21,7 @@ export function createGmailClient(accessToken, refreshToken) {
 
     return gmail;
   } catch (error) {
-    console.error('Error creating Gmail client:', error);
+    // Error creating Gmail client
     throw new Error(`Failed to create Gmail client: ${error.message}`);
   }
 }

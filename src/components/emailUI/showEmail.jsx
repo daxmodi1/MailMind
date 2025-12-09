@@ -40,7 +40,7 @@ export default function ShowEmailViaID({ page }) {
         // 1️⃣ Check prefetch cache first (from hover in email list)
         const prefetched = getPrefetchedEmail(id);
         if (prefetched) {
-          console.log(`⚡ Using prefetched email ${id}`);
+          // Using prefetched email
           setEmail(prefetched);
           setLoading(false);
           // Mark as read AFTER showing the email
@@ -59,7 +59,7 @@ export default function ShowEmailViaID({ page }) {
         }
 
         // 3️⃣ Fetch from server
-        console.log(`📡 Fetching email ${id} from server`);
+        // Fetching email from server
         const res = await fetch(`/api/gmail/email/${id}`, {
           signal: fetchAbortController.signal,
         });
@@ -130,9 +130,9 @@ export default function ShowEmailViaID({ page }) {
           labelIds: (email.labelIds || []).filter(label => label !== 'UNREAD')
         }));
 
-        console.log(`✓ Email ${id} marked as read and all caches updated`);
+        // Email marked as read and caches updated
       } catch (err) {
-        console.error('Failed to mark email as read:', err);
+        // Failed to mark email as read
       }
     }
   };
@@ -157,7 +157,7 @@ export default function ShowEmailViaID({ page }) {
       emailClientCache.delete(id);
       router.back();
     } catch (err) {
-      console.error('Failed to archive:', err);
+      // Failed to archive
     }
   };
 
@@ -176,7 +176,7 @@ export default function ShowEmailViaID({ page }) {
       emailClientCache.delete(id);
       router.back();
     } catch (err) {
-      console.error('Failed to delete:', err);
+      // Failed to delete
     }
   };
 
@@ -217,9 +217,9 @@ export default function ShowEmailViaID({ page }) {
       // Update the legacy cache method too
       updateCachedEmailStatus(id, isUnread ? 'markRead' : 'markUnread');
       
-      console.log(`✓ Email marked as ${isUnread ? 'read' : 'unread'} and cache updated`);
+      // Email read status toggled and cache updated
     } catch (err) {
-      console.error('Failed to toggle read status:', err);
+      // Failed to toggle read status
     }
   };
 
@@ -262,7 +262,7 @@ export default function ShowEmailViaID({ page }) {
       setSummary(data.summary);
     } catch (err) {
       setSummaryError(err.message);
-      console.error('Summarization error:', err);
+      // Summarization error
     } finally {
       setSummarizing(false);
     }

@@ -78,7 +78,7 @@ export async function GET(req, { params }) {
     });
     
   } catch (error) {
-    console.error('Detailed error fetching single email:', {
+    // Detailed error fetching single email
       message: error.message,
       status: error.status,
       code: error.code,

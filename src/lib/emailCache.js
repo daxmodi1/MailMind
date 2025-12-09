@@ -24,29 +24,29 @@ export function setCachedEmails(type, data) {
 
 // Update specific emails in all caches when operations are performed
 export function updateCachedEmail(emailId, updateFn) {
-  console.log(`🔄 Updating cache for email ${emailId}`);
-  console.log(`📊 Current cache entries:`, Array.from(clientEmailCache.keys()));
+  // Updating cache for email
+  // Current cache entries updated
   
   let updated = false;
   clientEmailCache.forEach((cached, type) => {
-    console.log(`  Checking cache type: ${type}`);
+    // Checking cache type
     const emails = Array.isArray(cached.data) ? cached.data : (cached.data?.emails || []);
-    console.log(`  - Found ${emails.length} emails in cache`);
+    // Found emails in cache
     
     const emailIndex = emails.findIndex(e => e.id === emailId);
     if (emailIndex !== -1) {
-      console.log(`  - Found email at index ${emailIndex}, updating...`);
+      // Found email, updating
       const updatedEmail = updateFn(emails[emailIndex]);
       emails[emailIndex] = updatedEmail;
       updated = true;
-      console.log(`  ✓ Updated in ${type}`, updatedEmail);
+      // Updated in cache
     }
   });
   
   if (!updated) {
-    console.log(`⚠️ Email ${emailId} not found in any cache`);
+    // Email not found in any cache
   } else {
-    console.log(`✅ Cache updated for ${emailId}`);
+    // Cache updated successfully
   }
 }
 
@@ -69,36 +69,36 @@ export function removeCachedEmail(emailId) {
 export async function prefetchEmails(type) {
   // Don't fetch if already cached
   if (getCachedEmails(type)) {
-    console.log(`⚡ Already cached: ${type}`);
+    // Already cached
     return;
   }
 
   try {
     // Skip prefetch for certain types that might not be valid
     if (!type || type === 'id' || !type.trim()) {
-      console.log(`⏭️ Skipping prefetch for invalid type: ${type}`);
+      // Skipping prefetch for invalid type
       return;
     }
 
-    console.log(`🔄 Prefetching ${type}...`);
+    // Prefetching data
     const url = `/api/gmail?type=${encodeURIComponent(type)}`;
-    console.log(`📡 Fetch URL: ${url}`);
+    // Fetching from URL
     
     const res = await fetch(url, {
       // Don't throw on network error, just return
     });
     
     if (!res.ok) {
-      console.warn(`⚠️ Prefetch returned ${res.status} for ${type}: ${res.statusText}`);
+      // Prefetch returned error status
       // Not authenticated or other error - silently fail
       return;
     }
     
     const data = await res.json();
     setCachedEmails(type, data);
-    console.log(`✅ Prefetched ${type} (${Array.isArray(data) ? data.length : data.emails?.length || 0} emails)`);
+    // Prefetched successfully
   } catch (error) {
     // Silently fail on network errors - prefetch is non-critical
-    console.debug(`📭 Prefetch silently failed for ${type}:`, error.message);
+    // Prefetch silently failed
   }
 }

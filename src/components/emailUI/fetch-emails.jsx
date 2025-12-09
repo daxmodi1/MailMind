@@ -57,41 +57,33 @@ export default function UnifiedEmailComponent({ type, subtype }) {
 
   // Pagination handlers
   const handleNextPage = () => {
-    console.log('🔜 Next page clicked');
-    console.log('Current state:', {
-      nextPageToken,
-      currentPageToken: pageToken,
-      pageHistoryLength: pageHistory.length,
-      currentPage
-    });
+    // 🔜 Next page clicked
+    // Current pagination state for next page
     
     if (nextPageToken) {
       setPageHistory(prev => [...prev, pageToken]);
       setPageToken(nextPageToken);
       setCurrentPage(prev => prev + 1);
-      console.log('✅ Moving to next page');
+      // ✅ Moving to next page
     } else {
-      console.log('❌ No next page token available');
+      // ❌ No next page token available
     }
   };
 
   const handlePreviousPage = () => {
-    console.log('🔙 Previous page clicked');
-    console.log('Current state:', {
-      pageHistoryLength: pageHistory.length,
-      currentPage
-    });
+    // 🔙 Previous page clicked
+    // Current pagination state for previous page
     
     if (pageHistory.length > 0) {
       const newHistory = [...pageHistory];
       const previousToken = newHistory.pop();
-      console.log('Going back to token:', previousToken);
+      // Going back to previous token
       setPageHistory(newHistory);
       setPageToken(previousToken);
       setCurrentPage(prev => prev - 1);
-      console.log('✅ Moving to previous page');
+      // ✅ Moving to previous page
     } else {
-      console.log('❌ Already on first page');
+      // ❌ Already on first page
     }
   };
 
@@ -136,7 +128,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
     if (!pageToken) {
       const cachedData = getCachedEmails(currentQueryType);
       if (cachedData) {
-        console.log(`⚡ Client cache hit for ${currentQueryType}`);
+        // ⚡ Client cache hit
         const emailsData = Array.isArray(cachedData) ? cachedData : (cachedData.emails || []);
         setEmails(emailsData);
         setLoading(false);
@@ -154,7 +146,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
 
     async function fetchEmails() {
       try {
-        console.log(`📡 Fetching from server: ${currentQueryType}, page token: ${pageToken || 'none'}`);
+        // 📡 Fetching from server
         const url = `/api/gmail?type=${currentQueryType}${pageToken ? `&pageToken=${pageToken}` : ''}`;
         const res = await fetch(url, {
           signal: fetchAbortController.current.signal,
@@ -181,11 +173,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
         setEmails(emailsData);
         setNextPageToken(newNextPageToken);
         
-        console.log('📊 State after update:', {
-          emailsCount: emailsData.length,
-          nextPageToken: newNextPageToken,
-          willEnableNextButton: !!newNextPageToken
-        });
+        // 📆 State after update
       } catch (err) {
         if (err.name !== 'AbortError') {
           setError(err.message);
@@ -227,10 +215,10 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       if (res.ok) {
         const data = await res.json();
         emailDetailCache.set(emailId, data);
-        console.log(`✨ Prefetched email ${emailId}`);
+        // ✨ Prefetched email
       }
     } catch (err) {
-      console.warn(`Prefetch failed for ${emailId}:`, err);
+      // Prefetch failed
     }
   };
 
@@ -249,7 +237,7 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       setPageHistory([]);
       setCurrentPage(1);
       
-      console.log(`🔄 Refreshing emails: ${queryType}`);
+      // 🔄 Refreshing emails
       const res = await fetch(`/api/gmail?type=${queryType}&refresh=true`, {
         // Force bypass cache
         cache: 'no-store',
@@ -264,10 +252,10 @@ export default function UnifiedEmailComponent({ type, subtype }) {
       setCachedEmails(queryType, emailsData);
       setEmails(emailsData);
       setNextPageToken(data.nextPageToken || null);
-      console.log(`✓ Refresh complete`);
+      // ✓ Refresh complete
     } catch (err) {
       setError(err.message);
-      console.error('Refresh error:', err);
+      // Refresh error
     } finally {
       setLoading(false);
     }
@@ -309,16 +297,6 @@ export default function UnifiedEmailComponent({ type, subtype }) {
   // 📩 Main UI - Log pagination state before render
   const hasNextPage = !!nextPageToken;
   const hasPreviousPage = pageHistory.length > 0;
-  
-  console.log('🎨 Rendering with pagination state:', { 
-    hasNextPage,
-    hasPreviousPage,
-    nextPageToken,
-    pageHistoryLength: pageHistory.length,
-    currentPage,
-    emailsCount: emails.length
-  });
-
   return (
     <div className="flex flex-col h-full bg-white dark:bg-neutral-950">
       {/* Search Header */}

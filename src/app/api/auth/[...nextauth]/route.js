@@ -19,7 +19,7 @@ async function refreshAccessToken(token) {
     const refreshed = await res.json();
 
     if (!res.ok) {
-      console.error("Failed to refresh token:", refreshed);
+      // Failed to refresh token
       throw refreshed;
     }
 
@@ -30,7 +30,7 @@ async function refreshAccessToken(token) {
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
     };
   } catch (error) {
-    console.error("RefreshAccessTokenError", error);
+    // RefreshAccessTokenError
     
     // Mark token as invalid - forces re-login
     return {
@@ -86,14 +86,14 @@ export const authOptions = {
       }
 
       // Token expired - refresh it
-      console.log("Token expired, refreshing...");
+      // Token expired, refreshing
       return await refreshAccessToken(token);
     },
 
     async session({ session, token }) {
       // If no valid tokens, mark session as invalid but still return it
       if (!token.accessToken || !token.refreshToken || token.error) {
-        console.log("No valid tokens or error present");
+        // No valid tokens or error present
         return {
           ...session,
           error: token.error || "NoTokens",
