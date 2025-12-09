@@ -359,7 +359,7 @@ export async function POST(req) {
             success: true,
             messageId: sendResult.data.id,
             threadId: sendResult.data.threadId,
-        })
+        });
 
     } catch (error) {
         // Email sending error

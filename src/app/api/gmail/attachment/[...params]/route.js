@@ -43,11 +43,6 @@ export async function GET(req, { params }) {
     
   } catch (error) {
     // Detailed error fetching single email
-      message: error.message,
-      status: error.status,
-      code: error.code,
-      emailId: id
-    });
 
     // Handle specific Gmail API errors
     if (error.code === 401 || (error.message && error.message.includes('invalid_token'))) {
